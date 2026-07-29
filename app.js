@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    1. SUPABASE KONFIGURATION & INIT
    ========================================= */
 const SUPABASE_URL = 'https://anxhzeovqgokcorvjttu.supabase.co';
@@ -107,6 +107,7 @@ function showCustomConfirm(message, title = "Bestätigen") {
 
 document.addEventListener("DOMContentLoaded", function() {
     if (state.currentUser) { 
+        initPresence(); 
         switchView('dashboard'); 
     } else { 
         switchView('landing'); 
@@ -326,6 +327,11 @@ async function openPasswordResetsModal() {
     // Unread Queries
     let { data: resetUsers, error: err1 } = await db.from('users').select('*').eq('reset_requested', true);
     let { data: inviteUsers, error: err2 } = await db.from('users').select('*').eq('invite', 'PENDING');
+    let { data: unreadNotifs, error: err3 } = await db.from('user_notifications')
+        .select('*')
+        .eq('target_username', 'SYSTEM_ADMIN')
+        .eq('is_read', false)
+        .order('created_at', { ascending: false });
     
     // Archive Query
     let { data: archiveNotifs } = await db.from('user_notifications')
@@ -334,7 +340,7 @@ async function openPasswordResetsModal() {
         .eq('is_read', true)
         .order('created_at', { ascending: false });
 
-    if (err1 || err2) {
+    if (err1 || err2 || err3) {
         panelUnread.innerHTML = '<p class="text-center text-danger">Fehler beim Laden der Anfragen aus der Datenbank.</p>';
         return;
     }
@@ -359,6 +365,27 @@ async function openPasswordResetsModal() {
                 actionHtml: `<button class="btn btn-sm btn-success fw-bold rounded-pill px-3 me-1" onclick="approveInviteRequest('${u.username}')">Freigeben</button>
                              <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="dismissInviteRequest('${u.username}')"><i class="bi bi-trash"></i></button>`
             });
+        });
+    }
+
+    if (unreadNotifs) {
+        unreadNotifs.forEach(n => {
+            if (n.reason === 'Namensänderung beantragt') {
+                const parts = n.message.split('auf: ');
+                const newName = parts.length > 1 ? parts[1].trim() : '?';
+                allRequests.push({
+                    type: 'Namensänderung', badgeClass: 'bg-info text-dark', username: n.created_by, email: `Wunschname: ${newName}`,
+                    date: n.created_at || new Date().toISOString(),
+                    actionHtml: `<button class="btn btn-sm btn-success fw-bold rounded-pill px-3 me-1" onclick="approveUsernameChange('${n.id}', '${n.created_by}', '${newName}')">Erlauben</button>
+                                 <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="dismissUsernameChange('${n.id}', '${n.created_by}', '${newName}')"><i class="bi bi-trash"></i></button>`
+                });
+            } else {
+                allRequests.push({
+                    type: 'Benachrichtigung', badgeClass: 'bg-secondary', username: n.created_by || 'System', email: n.message,
+                    date: n.created_at || new Date().toISOString(),
+                    actionHtml: `<button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="markNotificationRead('${n.id}')">Gelesen</button>`
+                });
+            }
         });
     }
     
@@ -515,7 +542,9 @@ async function checkAdminNotifications() {
     if (!state.currentUser || (!state.currentUser.isAdmin && !state.currentUser.isModerator)) return;
     let { data: usersReset } = await db.from('users').select('*').eq('reset_requested', true);
     let { data: usersInvite } = await db.from('users').select('*').eq('invite', 'PENDING');
-    let count = (usersReset ? usersReset.length : 0) + (usersInvite ? usersInvite.length : 0);
+    let { data: adminNotifs } = await db.from('user_notifications').select('id').eq('target_username', 'SYSTEM_ADMIN').eq('is_read', false);
+    
+    let count = (usersReset ? usersReset.length : 0) + (usersInvite ? usersInvite.length : 0) + (adminNotifs ? adminNotifs.length : 0);
     let badge = document.getElementById("adminBellBadge");
     if (badge) {
         if (count > 0) { badge.innerText = count; badge.classList.remove('d-none'); } 
@@ -681,6 +710,7 @@ document.getElementById("modalRegisterForm")?.addEventListener("submit", async f
     state.currentUser = { username, email, role: 'member', isAdmin: false, isModerator: false };
     localStorage.setItem("app_user", JSON.stringify(state.currentUser));
     hideModal("authModal");
+    initPresence();
     switchView('dashboard');
 });
 
@@ -697,7 +727,8 @@ document.getElementById("forgotPasswordForm")?.addEventListener("submit", async 
     showModal("successRequestUserModal");
 });
 
-function logout() { state.currentUser = null; localStorage.removeItem("app_user"); switchView('landing'); }
+function logout() {
+    stopPresence(); state.currentUser = null; localStorage.removeItem("app_user"); switchView('landing'); }
 
 /* =========================================
    4. ADMIN PANEL
@@ -2192,15 +2223,28 @@ async function saveProfile(e) {
     }
 }
 
-async function requestUsernameChange() {
-    const newName = prompt("Wie soll dein neuer Benutzername lauten?");
-    if (!newName || newName.trim() === '') return;
-    if (newName.trim() === state.currentUser.username) {
-        alert("Das ist bereits dein aktueller Name.");
+function requestUsernameChange() {
+    document.getElementById('newUsernameInput').value = '';
+    showModal('usernameChangeModal');
+}
+
+async function submitUsernameChange() {
+    const newName = document.getElementById('newUsernameInput').value.trim();
+    if (!newName) return;
+
+    if (newName.length < 3) {
+        hideModal('usernameChangeModal');
+        showCustomAlert('Fehler', 'Der Name muss mindestens 3 Zeichen lang sein.', 'bi-exclamation-triangle', 'text-warning');
         return;
     }
 
-    const message = `User ${state.currentUser.username} beantragt eine Namensänderung auf: ${newName.trim()}`;
+    if (newName.toLowerCase() === state.currentUser.username.toLowerCase()) {
+        hideModal('usernameChangeModal');
+        showCustomAlert('Hinweis', 'Das ist bereits dein aktueller Name.', 'bi-info-circle', 'text-info');
+        return;
+    }
+
+    const message = `User ${state.currentUser.username} beantragt eine Namensänderung auf: ${newName}`;
     await db.from('user_notifications').insert([{
         target_username: 'SYSTEM_ADMIN',
         message: message,
@@ -2209,5 +2253,149 @@ async function requestUsernameChange() {
         created_by: state.currentUser.username
     }]);
 
-    showCustomAlert('Anfrage gesendet', 'Dein Änderungswunsch wurde an die Admins weitergeleitet.', 'bi-send-check', 'text-success');
+    hideModal('usernameChangeModal');
+    showCustomAlert('Anfrage gesendet', 'Dein ÄÄnderungswunsch wurde an die Admins weitergeleitet.', 'bi-send-check', 'text-success');
 }
+
+async function approveUsernameChange(notifId, oldName, newName) {
+    if (!(await showCustomConfirm(`Möchtest du den Namen von "${oldName}" in "${newName}" wirklich ändern?`, "Namensänderung"))) return;
+
+    let { data: existing } = await db.from('users').select('id').eq('username', newName).single();
+    if (existing) {
+        showCustomAlert('Fehler', 'Der neue Name ist bereits vergeben!', 'bi-exclamation-triangle', 'text-danger');
+        return;
+    }
+
+    try {
+        await db.from('users').update({ username: newName }).eq('username', oldName);
+        await db.from('map_pins').update({ username: newName }).eq('username', oldName);
+        await db.from('pixel_garage').update({ owner: newName }).eq('owner', oldName);
+        await db.from('gpx_routes').update({ created_by: newName }).eq('created_by', oldName);
+        await db.from('events').update({ created_by: newName }).eq('created_by', oldName);
+        await db.from('forum_topics').update({ author: newName }).eq('author', oldName);
+        
+        await db.from('user_notifications').update({ target_username: newName }).eq('target_username', oldName);
+        await db.from('user_notifications').update({ created_by: newName }).eq('created_by', oldName);
+
+        let { data: topicsWithReplies } = await db.from('forum_topics').select('*');
+        if (topicsWithReplies) {
+            for (let t of topicsWithReplies) {
+                if (t.replies && t.replies.length > 0) {
+                    let changed = false;
+                    t.replies.forEach(r => {
+                        if (r.author === oldName) { r.author = newName; changed = true; }
+                    });
+                    if (changed) await db.from('forum_topics').update({ replies: t.replies }).eq('id', t.id);
+                }
+            }
+        }
+
+        await db.from('user_notifications').update({ is_read: true }).eq('id', notifId);
+        await sendUserNotification(newName, 'Deine Namensänderung wurde genehmigt! Dein neuer Name ist jetzt: ' + newName, 'Admin Nachricht', 'success');
+        
+        showCustomAlert('Erfolg', 'Der Name wurde erfolgreich geändert.', 'bi-check-circle-fill', 'text-success');
+        openPasswordResetsModal();
+    } catch (err) {
+        console.error(err);
+        showCustomAlert('Fehler', 'Beim Ändern des Namens ist ein Fehler aufgetreten.', 'bi-exclamation-triangle', 'text-danger');
+    }
+}
+
+async function dismissUsernameChange(notifId, oldName, newName) {
+    if (!(await showCustomConfirm(`Namensänderung für "${oldName}" wirklich ablehnen?`, "Ablehnen"))) return;
+    await db.from('user_notifications').update({ is_read: true }).eq('id', notifId);
+    await sendUserNotification(oldName, `Deine Anfrage auf Namensänderung zu "${newName}" wurde leider abgelehnt.`, 'Admin Nachricht', 'danger');
+    openPasswordResetsModal();
+}
+
+
+
+/* =========================================
+   ONLINE PRESENCE LOGIC
+   ========================================= */
+let presenceChannel = null;
+
+function initPresence() {
+    if (!state.currentUser) return;
+    
+    // Show the sidebar and toggle
+    document.getElementById('onlineUsersSidebar')?.classList.remove('d-none');
+    document.getElementById('onlineSidebarToggle')?.classList.remove('d-none');
+    document.getElementById('onlineSidebarToggle')?.classList.add('d-md-none');
+
+    if (presenceChannel) {
+        presenceChannel.unsubscribe();
+    }
+
+    presenceChannel = db.channel('online-users', {
+        config: {
+            presence: {
+                key: state.currentUser.username,
+            },
+        },
+    });
+
+    presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+            const newState = presenceChannel.presenceState();
+            renderOnlineUsers(newState);
+        })
+        .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await presenceChannel.track({
+                    online_at: new Date().toISOString(),
+                    username: state.currentUser.username,
+                });
+            }
+        });
+}
+
+function stopPresence() {
+    if (presenceChannel) {
+        presenceChannel.unsubscribe();
+        presenceChannel = null;
+    }
+    document.getElementById('onlineUsersSidebar')?.classList.add('d-none');
+    document.getElementById('onlineSidebarToggle')?.classList.add('d-none');
+}
+
+function renderOnlineUsers(presenceState) {
+    const listEl = document.getElementById('onlineUsersList');
+    if (!listEl) return;
+    
+    listEl.innerHTML = '';
+    let count = 0;
+    
+    // presenceState is an object where keys are the presence keys (usernames)
+    for (const username in presenceState) {
+        count++;
+        // We just take the first connection if a user has multiple tabs
+        const userPresence = presenceState[username][0];
+        
+        const item = document.createElement('div');
+        item.className = 'online-user-item';
+        item.innerHTML = `
+            <div class="online-indicator"></div>
+            <span class="text-white fw-bold">` + escapeHTML(username) + `</span>
+        `;
+        listEl.appendChild(item);
+    }
+    
+    if (count === 0) {
+        listEl.innerHTML = '<p class="text-white-50 small">Niemand online</p>';
+    }
+}
+
+function toggleOnlineSidebar() {
+    const sidebar = document.getElementById('onlineUsersSidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('show');
+    }
+}
+
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.innerText = str;
+    return div.innerHTML;
+}
+
