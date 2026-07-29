@@ -2374,10 +2374,8 @@ function renderOnlineUsers(presenceState) {
         
         const item = document.createElement('div');
         item.className = 'online-user-item';
-        item.innerHTML = `
-            <div class="online-indicator"></div>
-            <span class="text-white fw-bold">` + escapeHTML(username) + `</span>
-        `;
+        item.style.cursor = 'pointer';
+        item.innerHTML = `<div class="d-flex w-100 justify-content-between align-items-center"><div class="d-flex align-items-center flex-grow-1" onclick="showPublicProfile('` + escapeHTML(username) + `')"><div class="online-indicator"></div><span class="text-white fw-bold">` + escapeHTML(username) + `</span></div><button class="btn btn-sm btn-link text-warning p-0 ms-2" onclick="event.stopPropagation(); openDirectChat('` + escapeHTML(username) + `')" title="Chatten"><i class="bi bi-chat-dots-fill"></i></button></div>`;
         listEl.appendChild(item);
     }
     
@@ -2398,4 +2396,144 @@ function escapeHTML(str) {
     div.innerText = str;
     return div.innerHTML;
 }
+
+
+/* =========================================
+   PUBLIC PROFILE VIEW
+   ========================================= */
+async function showPublicProfile(username) {
+    if (!username) return;
+    document.getElementById('publicProfileUsername').textContent = username;
+    
+    // Clear previous data
+    document.getElementById('publicProfileSocials').innerHTML = '<div class="spinner-border text-warning" role="status"></div>';
+    document.getElementById('publicProfileGarage').innerHTML = '<div class="spinner-border text-warning spinner-border-sm" role="status"></div>';
+    document.getElementById('publicProfileForum').innerHTML = '<div class="spinner-border text-warning spinner-border-sm" role="status"></div>';
+    document.getElementById('publicProfileRoutes').innerHTML = '<div class="spinner-border text-warning spinner-border-sm" role="status"></div>';
+    
+    switchView('public-profile');
+
+    // Fetch user details for socials
+    let { data: user } = await db.from('users').select('*').eq('username', username).single();
+    let socialsHtml = '';
+    if (user) {
+        if (user.social_ig) socialsHtml += '<a href="https://instagram.com/' + user.social_ig + '" target="_blank" class="btn btn-outline-danger rounded-circle"><i class="bi bi-instagram"></i></a>';
+        if (user.social_tiktok) socialsHtml += '<a href="https://tiktok.com/@' + user.social_tiktok + '" target="_blank" class="btn btn-outline-light rounded-circle"><i class="bi bi-tiktok"></i></a>';
+        if (user.social_youtube) socialsHtml += '<a href="https://youtube.com/@' + user.social_youtube + '" target="_blank" class="btn btn-outline-danger rounded-circle"><i class="bi bi-youtube"></i></a>';
+    }
+    document.getElementById('publicProfileSocials').innerHTML = socialsHtml || '<span class="text-secondary small">Keine Socials verlinkt</span>';
+
+    // Fetch Garage Bikes
+    let { data: bikes } = await db.from('pixel_garage').select('model').eq('owner', username);
+    let garageHtml = '';
+    if (bikes && bikes.length > 0) {
+        garageHtml = bikes.map(b => '<div class="p-2 border border-secondary rounded bg-dark text-white" style="cursor:pointer;" onclick="switchView(\'garage\')"><i class="bi bi-bicycle me-2 text-warning"></i>' + escapeHTML(b.model) + '</div>').join('');
+    } else {
+        garageHtml = '<div class="text-secondary small">Keine Bikes in der Garage.</div>';
+    }
+    document.getElementById('publicProfileGarage').innerHTML = garageHtml;
+
+    // Fetch Forum Posts
+    let { data: topics } = await db.from('forum_topics').select('id, title, category').eq('author', username);
+    let forumHtml = '';
+    if (topics && topics.length > 0) {
+        forumHtml = topics.map(t => '<div class="p-2 border border-secondary rounded bg-dark text-white text-truncate" style="cursor:pointer;" onclick="openChatTopic(' + t.id + ', \'' + escapeHTML(t.title).replace(/'/g, "\\'") + '\')"><span class="badge bg-secondary me-2">' + escapeHTML(t.category).toUpperCase() + '</span>' + escapeHTML(t.title) + '</div>').join('');
+    } else {
+        forumHtml = '<div class="text-secondary small">Keine Foren-Beiträge.</div>';
+    }
+    document.getElementById('publicProfileForum').innerHTML = forumHtml;
+
+    // Fetch GPX Routes
+    let { data: routes } = await db.from('gpx_routes').select('name').eq('author', username);
+    let routesHtml = '';
+    if (routes && routes.length > 0) {
+        routesHtml = routes.map(r => '<div class="p-2 border border-secondary rounded bg-dark text-white text-truncate" style="cursor:pointer;" onclick="switchView(\'gpx\')"><i class="bi bi-signpost-split me-2 text-success"></i>' + escapeHTML(r.name) + '</div>').join('');
+    } else {
+        routesHtml = '<div class="text-secondary small">Keine Routen hochgeladen.</div>';
+    }
+    document.getElementById('publicProfileRoutes').innerHTML = routesHtml;
+}
+
+/* =========================================
+   DIRECT CHAT (1-on-1)
+   ========================================= */
+let activeDirectChatUser = null;
+let directChatSubscription = null;
+
+async function openDirectChat(targetUser) {
+    if (!state.currentUser) return showCustomAlert("Bitte melde dich an.");
+    if (targetUser === state.currentUser.username) return showCustomAlert("Du kannst nicht mit dir selbst chatten.");
+
+    activeDirectChatUser = targetUser;
+    document.getElementById("directChatTargetUser").textContent = targetUser;
+    
+    // Initial load
+    await loadDirectMessages();
+    
+    // Subscribe to new messages realtime
+    if (directChatSubscription) {
+        db.removeChannel(directChatSubscription);
+    }
+    
+    directChatSubscription = db.channel('custom-all-channel-direct')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, payload => {
+            const msg = payload.new;
+            if ((msg.sender === state.currentUser.username && msg.receiver === activeDirectChatUser) ||
+                (msg.sender === activeDirectChatUser && msg.receiver === state.currentUser.username)) {
+                loadDirectMessages();
+            }
+        })
+        .subscribe();
+        
+    showModal("directChatModal");
+}
+
+async function loadDirectMessages() {
+    if (!activeDirectChatUser || !state.currentUser) return;
+    
+    let { data: messages } = await db.from('direct_messages')
+        .select('*')
+        .or('and(sender.eq.' + state.currentUser.username + ',receiver.eq.' + activeDirectChatUser + '),and(sender.eq.' + activeDirectChatUser + ',receiver.eq.' + state.currentUser.username + ')')
+        .order('created_at', { ascending: true });
+        
+    const listEl = document.getElementById("directChatMessageList");
+    if (!messages || messages.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-secondary mt-4">Noch keine Nachrichten. Schreib die erste!</p>';
+        return;
+    }
+    
+    listEl.innerHTML = messages.map(m => '<div class="chat-bubble ' + (m.sender === state.currentUser.username ? 'chat-bubble-own' : 'chat-bubble-other') + '"><div class="chat-author">' + escapeHTML(m.sender) + '</div><div>' + escapeHTML(m.message) + '</div></div>').join('');
+    
+    setTimeout(() => { listEl.scrollTop = listEl.scrollHeight; }, 100);
+}
+
+async function sendDirectMessage() {
+    const input = document.getElementById("directChatInputText");
+    const text = input.value.trim();
+    if (!text || !activeDirectChatUser || !state.currentUser) return;
+    
+    input.value = "";
+    await db.from('direct_messages').insert([{
+        sender: state.currentUser.username,
+        receiver: activeDirectChatUser,
+        message: text
+    }]);
+    
+    loadDirectMessages();
+}
+
+// Ensure subscription is closed when modal is closed
+document.addEventListener("DOMContentLoaded", function() {
+    const dcm = document.getElementById('directChatModal');
+    if (dcm) {
+        dcm.addEventListener('hidden.bs.modal', function () {
+            activeDirectChatUser = null;
+            if (directChatSubscription) {
+                db.removeChannel(directChatSubscription);
+                directChatSubscription = null;
+            }
+        });
+    }
+});
+
 

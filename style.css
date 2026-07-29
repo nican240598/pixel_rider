@@ -1013,7 +1013,7 @@ footer {
     top: 100px; /* Below header with some margin */
     left: 20px;
     width: 250px;
-    max-height: calc(100vh - 140px);
+    max-height: calc(100vh - 280px);
     background: rgba(10, 10, 12, 0.6);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(157, 78, 221, 0.4);
@@ -1099,3 +1099,5 @@ footer {
         opacity: 1;
     }
 }
+
+

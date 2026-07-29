@@ -17,7 +17,7 @@
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 
     <!-- DYNAMISCHER HINTERGRUND -->
     <div class="global-bg" id="globalBg"></div>
@@ -46,7 +46,7 @@
         </div>
     </nav>
 
-    <main class="container">
+    <main class="container flex-grow-1">
         <!-- VIEW 1: LANDINGPAGE -->
         <section id="view-landing" class="app-view py-5 text-center">
             <h1 class="display-3 fw-bold text-uppercase mb-3">Pixel Rider</h1>
@@ -208,6 +208,46 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </section>
+        <!-- VIEW: PUBLIC PROFILE -->
+        <section id="view-public-profile" class="app-view">
+            <div class="content-card mx-auto" style="max-width: 900px;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="text-uppercase fw-bold text-warning mb-0"><i class="bi bi-person-badge me-2"></i>Rider Profil</h3>
+                    <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="switchView('dashboard')"><i class="bi bi-arrow-left me-1"></i>Zurück</button>
+                </div>
+                
+                <div class="text-center mb-5 pb-4 border-bottom border-secondary">
+                    <div class="mb-3">
+                        <i class="bi bi-person-circle" style="font-size: 5rem; color: var(--brand-purple-glow);"></i>
+                    </div>
+                    <h1 class="text-white fw-bold text-uppercase mb-2" id="publicProfileUsername">User</h1>
+                    <div id="publicProfileSocials" class="d-flex justify-content-center gap-3 mt-3">
+                        <!-- Socials injected here -->
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <h5 class="text-purple-glow fw-bold mb-3"><i class="bi bi-wrench-adjustable me-2"></i>Garage</h5>
+                        <div id="publicProfileGarage" class="d-flex flex-column gap-2">
+                            <!-- Garage items -->
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h5 class="text-purple-glow fw-bold mb-3"><i class="bi bi-chat-quote me-2"></i>Forum Posts</h5>
+                        <div id="publicProfileForum" class="d-flex flex-column gap-2">
+                            <!-- Forum topics -->
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h5 class="text-purple-glow fw-bold mb-3"><i class="bi bi-map me-2"></i>Routen</h5>
+                        <div id="publicProfileRoutes" class="d-flex flex-column gap-2">
+                            <!-- GPX Routes -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -910,6 +950,27 @@
         </div>
     </div>
 
+        <!-- MODAL: DIRECT CHAT -->
+    <div class="modal fade" id="directChatModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content text-white" style="background: rgba(10, 10, 12, 0.95); backdrop-filter: blur(16px); border: 1px solid var(--brand-purple);">
+                <div class="modal-header border-0 border-bottom border-secondary">
+                    <h5 class="modal-title fw-bold" style="color: var(--brand-purple-glow);"><i class="bi bi-chat-quote-fill me-2"></i>Chat mit <span id="directChatTargetUser" class="text-white"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body chat-container" id="directChatMessageList" style="min-height: 400px; max-height: 60vh; overflow-y: auto;">
+                    <!-- Messages go here -->
+                </div>
+                <div class="modal-footer border-0 border-top border-secondary bg-dark">
+                    <div class="input-group">
+                        <input type="text" id="directChatInputText" class="form-control input-custom" placeholder="Nachricht schreiben..." onkeypress="if(event.key === 'Enter') sendDirectMessage()">
+                        <button class="btn btn-warning fw-bold text-dark px-4" onclick="sendDirectMessage()"><i class="bi bi-send-fill"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: Namensänderung BEANTRAGEN -->
     <div class="modal fade" id="usernameChangeModal" tabindex="-1" style="z-index: 1060;">
         <div class="modal-dialog modal-dialog-centered">
@@ -926,8 +987,7 @@
         </div>
     </div>
 
-    <main>
-
+    </main>
     <footer>
         <div class="container text-center">
             <p class="text-white mb-3 fs-5">&copy; 2026 Pixel Rider. Alle Rechte vorbehalten.</p>
@@ -948,6 +1008,10 @@
     <script src="app.js"></script>
 </body>
 </html>
+
+
+
+
 
 
 
