@@ -1006,3 +1006,71 @@ footer {
 .notif-card:last-child {
     margin-bottom: 0;
 }
+
+/* ONLINE USERS SIDEBAR */
+.online-users-sidebar {
+    position: fixed;
+    top: 80px; /* Below header */
+    left: 0;
+    width: 250px;
+    height: calc(100vh - 80px);
+    background: rgba(9, 9, 11, 0.85);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(197, 160, 26, 0.3);
+    z-index: 1040;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+}
+.sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(197, 160, 26, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+.online-user-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    transition: background 0.2s;
+}
+.online-user-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+.online-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #28a745;
+    box-shadow: 0 0 8px #28a745;
+    margin-right: 10px;
+}
+#onlineSidebarToggle {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1050;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .online-users-sidebar {
+        transform: translateX(-100%);
+    }
+    .online-users-sidebar.show {
+        transform: translateX(0);
+    }
+}

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -22,6 +22,21 @@
     <!-- DYNAMISCHER HINTERGRUND -->
     <div class="global-bg" id="globalBg"></div>
     <div class="bg-overlay"></div>
+    <!-- ONLINE USERS SIDEBAR -->
+    <aside id="onlineUsersSidebar" class="online-users-sidebar d-none">
+        <div class="sidebar-header">
+            <h5 class="mb-0 text-white"><i class="bi bi-people-fill text-warning me-2"></i>Online</h5>
+            <button class="btn btn-sm text-white d-md-none" onclick="toggleOnlineSidebar()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="sidebar-content" id="onlineUsersList">
+            <!-- Users will be injected here -->
+        </div>
+    </aside>
+    <button id="onlineSidebarToggle" class="btn btn-warning rounded-circle shadow d-none d-md-none" onclick="toggleOnlineSidebar()">
+        <i class="bi bi-people-fill"></i>
+    </button>
 
     <!-- Header Navigation -->
     <nav class="header-nav">
@@ -35,7 +50,7 @@
         <!-- VIEW 1: LANDINGPAGE -->
         <section id="view-landing" class="app-view py-5 text-center">
             <h1 class="display-3 fw-bold text-uppercase mb-3">Pixel Rider</h1>
-            <p class="fs-4 text-warning mb-5">„Alleine nur ein unbedeutender Pixel, zusammen eine einzigartige Community“</p>
+            <p class="fs-4 text-warning mb-5">â€žAlleine nur ein unbedeutender Pixel, zusammen eine einzigartige Communityâ€œ</p>
 
             <div class="row g-4 justify-content-center mb-5 text-start">
                 <!-- 1. Zusammenhalt -->
@@ -43,7 +58,7 @@
                     <div class="feature-card h-100">
                         <i class="bi bi-people-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Zusammenhalt</h4>
-                        <p class="text-light fs-6">Egal welches Bike in deiner Garage steht – bei uns zählt der Charakter unterm Helm. Wir starten gemeinsam, wir kommen gemeinsam an. Bei Pixel Rider bleibt niemand zurück.</p>
+                        <p class="text-light fs-6">Egal welches Bike in deiner Garage steht â€“ bei uns zählt der Charakter unterm Helm. Wir starten gemeinsam, wir kommen gemeinsam an. Bei Pixel Rider bleibt niemand zurück.</p>
                     </div>
                 </div>
                 <!-- 2. Schrauber-Hilfe -->
@@ -59,7 +74,7 @@
                     <div class="feature-card h-100">
                         <i class="bi bi-chat-quote-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Wissensaustausch</h4>
-                        <p class="text-light fs-6">Ob die besten Kurven-Setups, ehrliche Reifenempfehlungen oder versteckte GPX-Routen – wir teilen unser Wissen offen, ehrlich und immer auf Augenhöhe.</p>
+                        <p class="text-light fs-6">Ob die besten Kurven-Setups, ehrliche Reifenempfehlungen oder versteckte GPX-Routen â€“ wir teilen unser Wissen offen, ehrlich und immer auf Augenhöhe.</p>
                     </div>
                 </div>
                 <!-- 4. Ride Outs & Events -->
@@ -67,7 +82,7 @@
                     <div class="feature-card h-100">
                         <i class="bi bi-calendar-event-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Ride Outs & Events</h4>
-                        <p class="text-light fs-6">Der Asphalt ist unser Zuhause. Von der spontanen Feierabendrunde über epische Tagestouren bis hin zu exklusiven Crew-Events – wir leben für den gemeinsamen Ride.</p>
+                        <p class="text-light fs-6">Der Asphalt ist unser Zuhause. Von der spontanen Feierabendrunde über epische Tagestouren bis hin zu exklusiven Crew-Events â€“ wir leben für den gemeinsamen Ride.</p>
                     </div>
                 </div>
                 <!-- 5. WhatsApp Community -->
@@ -75,7 +90,7 @@
                     <div class="feature-card h-100">
                         <i class="bi bi-whatsapp feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">WhatsApp Community</h4>
-                        <p class="text-light fs-6">Strukturiert, fokussiert und zu 100 % spamfrei. Unsere Gruppen sind thematisch sauber getrennt – von der Verabredung zur Tour bis hin zum echten Technik-Nerd-Talk.</p>
+                        <p class="text-light fs-6">Strukturiert, fokussiert und zu 100 % spamfrei. Unsere Gruppen sind thematisch sauber getrennt â€“ von der Verabredung zur Tour bis hin zum echten Technik-Nerd-Talk.</p>
                     </div>
                 </div>
                 <!-- 6. Admins & Moderatoren -->
@@ -132,18 +147,18 @@
             </div>
         </section>
 
-        <!-- VIEW: PROFILE -->
+                <!-- VIEW: PROFILE -->
         <section id="view-profile" class="app-view">
             <div class="content-card mx-auto" style="max-width: 700px;">
                 <h3 class="text-uppercase fw-bold text-warning mb-4"><i class="bi bi-person-gear me-2"></i>Dein Profil</h3>
                 
                 <div class="mb-4 text-center">
-                    <h5 class="text-light">Aktueller Benutzername:</h5>
+                    <h5 class="text-white">Aktueller Benutzername:</h5>
                     <h2 class="text-purple-glow fw-bold" id="profileCurrentUsername">-</h2>
                     <button class="btn btn-sm btn-outline-warning mt-2" onclick="requestUsernameChange()">
                         <i class="bi bi-pencil-square me-1"></i> Namensänderung anfragen
                     </button>
-                    <p class="text-muted small mt-2">Namen können nur durch einen Admin geändert werden.</p>
+                    <p class="text-white small mt-2">Namen können nur durch einen Admin geändert werden.</p>
                 </div>
 
                 <hr class="border-secondary mb-4">
@@ -151,38 +166,38 @@
                 <form id="profileForm" onsubmit="saveProfile(event)">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="label-custom">E-Mail Adresse</label>
-                            <input type="email" class="input-custom" id="profileEmail" required>
+                            <label class="label-custom text-white">E-Mail Adresse</label>
+                            <input type="email" class="input-custom text-white" id="profileEmail" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="label-custom">Neues Passwort (optional)</label>
-                            <input type="password" class="input-custom" id="profilePassword" placeholder="Leer lassen = nicht ändern">
+                            <label class="label-custom text-white">Neues Passwort (optional)</label>
+                            <input type="password" class="input-custom text-white" id="profilePassword" placeholder="Leer lassen = nicht ändern">
                         </div>
                         
                         <div class="col-12 mt-4">
                             <h5 class="text-purple-glow fw-bold mb-3"><i class="bi bi-share-fill me-2"></i>Social Media Verknüpfungen</h5>
-                            <p class="text-muted small">Gib hier deine Benutzernamen ein. Diese werden als klickbare Links in der Garage und im Forum bei deinen Posts angezeigt.</p>
+                            <p class="text-white small">Gib hier deine Benutzernamen ein. Diese werden als klickbare Links in der Garage und im Forum bei deinen Posts angezeigt.</p>
                         </div>
                         
                         <div class="col-md-4">
-                            <label class="label-custom"><i class="bi bi-instagram me-1 text-danger"></i>Instagram</label>
+                            <label class="label-custom text-white"><i class="bi bi-instagram me-1 text-danger"></i>Instagram</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-dark text-muted border-secondary">@</span>
-                                <input type="text" class="form-control input-custom" id="profileIg" placeholder="username">
+                                <span class="input-group-text bg-secondary text-white border-secondary">@</span>
+                                <input type="text" class="form-control input-custom text-white" id="profileIg" placeholder="username">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="label-custom"><i class="bi bi-tiktok me-1 text-light"></i>TikTok</label>
+                            <label class="label-custom text-white"><i class="bi bi-tiktok me-1 text-white"></i>TikTok</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-dark text-muted border-secondary">@</span>
-                                <input type="text" class="form-control input-custom" id="profileTt" placeholder="username">
+                                <span class="input-group-text bg-secondary text-white border-secondary">@</span>
+                                <input type="text" class="form-control input-custom text-white" id="profileTt" placeholder="username">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="label-custom"><i class="bi bi-youtube me-1 text-danger"></i>YouTube</label>
+                            <label class="label-custom text-white"><i class="bi bi-youtube me-1 text-danger"></i>YouTube</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-dark text-muted border-secondary">@</span>
-                                <input type="text" class="form-control input-custom" id="profileYt" placeholder="Channel">
+                                <span class="input-group-text bg-secondary text-white border-secondary">@</span>
+                                <input type="text" class="form-control input-custom text-white" id="profileYt" placeholder="Channel">
                             </div>
                         </div>
                     </div>
@@ -317,7 +332,7 @@
                             <h5 class="text-uppercase text-warning fw-bold mb-3">Entdecken (POIs)</h5>
                             <div class="form-check form-switch mb-2">
                                 <input class="form-check-input custom-switch" type="checkbox" id="poiTreff" onchange="toggleMapPOIs()">
-                                <label class="form-check-label text-light" for="poiTreff">Bikertreffs & Cafés (Grün)</label>
+                                <label class="form-check-label text-light" for="poiTreff">Bikertreffs & CafÃ©s (Grün)</label>
                             </div>
                             <div class="form-check form-switch">
                                 <input class="form-check-input custom-switch" type="checkbox" id="poiPass" onchange="toggleMapPOIs()">
@@ -800,7 +815,7 @@
                     </div>
                     <div class="d-flex gap-3">
                         <button type="button" class="btn btn-outline-light rounded-pill px-4 flex-grow-1" data-bs-dismiss="modal">Abbrechen</button>
-                        <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold shadow-lg flex-grow-1">Änderungen speichern</button>
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold shadow-lg flex-grow-1">ÄÄnderungen speichern</button>
                     </div>
                 </form>
             </div>
@@ -830,7 +845,7 @@
         </div>
     </div>
 
-    <!-- MODAL: USER BENACHRICHTIGUNGEN (Glocke – für alle User) -->
+    <!-- MODAL: USER BENACHRICHTIGUNGEN (Glocke â€“ für alle User) -->
     <div class="modal fade" id="userNotificationsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content text-white rounded-4 border-0" style="background: rgba(9,9,11,0.99); border: 1px solid rgba(157,78,221,0.3) !important;">
@@ -895,103 +910,23 @@
         </div>
     </div>
 
+    <!-- MODAL: Namensänderung BEANTRAGEN -->
+    <div class="modal fade" id="usernameChangeModal" tabindex="-1" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-white p-4 rounded-4 text-center border" style="background: rgba(9, 9, 11, 0.98) !important; border-color: rgba(197, 160, 26, 0.5) !important;">
+                <i class="bi bi-person-gear mb-2" style="font-size: 3.5rem; color: var(--brand-gold);"></i>
+                <h4 class="fw-bold text-uppercase mt-2" style="color: var(--brand-gold);">Namensänderung</h4>
+                <p class="mb-4 mt-3 text-light">Bitte gib deinen gewünschten neuen Benutzernamen ein. Die ÄÄnderung muss von einem Admin genehmigt werden.</p>
+                <input type="text" id="newUsernameInput" class="input-custom mb-4 text-center fs-5" placeholder="Neuer Username">
+                <div class="d-flex gap-3 justify-content-center">
+                    <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn rounded-pill px-4 fw-bold shadow-lg text-dark" style="background: var(--brand-gold);" onclick="submitUsernameChange()">Beantragen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <main>
-        <!-- VIEW: DATENSCHUTZ -->
-        <section id="view-privacy" class="app-view">
-            <div class="content-card mx-auto" style="max-width: 900px; text-align: left;">
-                <h2 class="text-uppercase fw-bold mb-4 text-warning" style="border-bottom: 1px solid rgba(157,78,221,0.3); padding-bottom: 15px;">Datenschutzerklärung</h2>
-                
-                <div class="privacy-section mb-4">
-                    <h5 class="text-purple-glow fw-bold text-uppercase">1. Datenschutz auf einen Blick</h5>
-                    <p class="text-light small">Die Betreiber dieser Seiten nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend den gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.</p>
-                    <p class="text-light small">Wenn Sie diese Website benutzen, werden verschiedene personenbezogene Daten erhoben. Personenbezogene Daten sind Daten, mit denen Sie persönlich identifiziert werden können. Die vorliegende Datenschutzerklärung erläutert, welche Daten wir erheben und wofür wir sie nutzen. Sie erläutert auch, wie und zu welchem Zweck das geschieht.</p>
-                </div>
-
-                <div class="privacy-section mb-4">
-                    <h5 class="text-purple-glow fw-bold text-uppercase">2. Verantwortlicher für die Datenverarbeitung</h5>
-                    <p class="text-light small">Der Verantwortliche für die Datenverarbeitung auf dieser Website ist:</p>
-                    <p class="text-light small fw-bold mb-0">Nico Anschau</p>
-                    <p class="text-light small mb-0">Ort: Hüffler</p>
-                    <p class="text-light small">Kontakt: nico.anschau1998@gmail.com</p>
-                </div>
-
-                <div class="privacy-section mb-4">
-                    <h5 class="text-purple-glow fw-bold text-uppercase">3. Bereitstellung der Website (Server-Logfiles)</h5>
-                    <p class="text-light small">Der Provider dieser Seiten erhebt und speichert automatisch Informationen in sogenannten Server-Log-Dateien, die Ihr Browser automatisch an uns übermittelt. Dies sind:</p>
-                    <ul class="text-light small">
-                        <li>Browsertyp und Browserversion</li>
-                        <li>Verwendetes Betriebssystem</li>
-                        <li>Referrer URL (die zuvor besuchte Seite)</li>
-                        <li>Hostname des zugreifenden Rechners</li>
-                        <li>Uhrzeit der Serveranfrage</li>
-                        <li>IP-Adresse</li>
-                    </ul>
-                    <p class="text-light small">Eine Zusammenführung dieser Daten mit anderen Datenquellen wird nicht vorgenommen. Die Erfassung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO. Der Websitebetreiber hat ein berechtigtes Interesse an der technisch fehlerfreien Darstellung und der Optimierung seiner Website – hierzu müssen die Server-Logfiles erfasst werden.</p>
-                </div>
-
-                <div class="privacy-section mb-4">
-                    <h5 class="text-purple-glow fw-bold text-uppercase">4. Registrierung, Login & Datenbank (Supabase)</h5>
-                    <p class="text-light small">Für die Bereitstellung unserer Community-Funktionen (Logins, Profile, Speichern von GPX-Routen, Forenbeiträgen etc.) nutzen wir den Dienst <strong>Supabase</strong> (Supabase Inc.).</p>
-                    <p class="text-light small">Wenn Sie sich bei uns registrieren, werden Ihre E-Mail-Adresse, ein sicheres Passwort-Hash und Ihr gewählter Benutzername an die Server von Supabase übermittelt und dort gespeichert. Diese Daten sind zwingend erforderlich, um Ihnen Zugang zum internen Crew-Bereich zu gewähren und Ihre Inhalte zuzuordnen.</p>
-                    <p class="text-light small">Die Verarbeitung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung bzw. vorvertragliche Maßnahmen).</p>
-                </div>
-
-                <div class="privacy-section mb-4">
-                    <h5 class="text-purple-glow fw-bold text-uppercase">5. Lokale Speicherung (Local Storage)</h5>
-                    <p class="text-light small">Diese Web-App verwendet zur Aufrechterhaltung der aktiven Sitzung (damit Sie nach einem Seiten-Neuladen nicht direkt ausgeloggt werden) den sogenannten "Local Storage" Ihres Browsers. Darin wird lediglich Ihr lokaler Login-Status (z. B. Ihr Username und Ihre Rolle) gespeichert, bis Sie sich aktiv ausloggen. Es handelt sich um eine technisch notwendige Speicherung zur Erbringung unserer Dienste gemäß Art. 6 Abs. 1 lit. f DSGVO bzw. § 25 Abs. 2 TTDSG.</p>
-                </div>
-
-                <div class="privacy-section mb-4">
-                    <h5 class="text-purple-glow fw-bold text-uppercase">6. Kontaktformular (Web3Forms)</h5>
-                    <p class="text-light small">Wenn Sie uns per Kontaktformular Anfragen zukommen lassen (sofern auf der Seite eingebunden), werden Ihre Angaben aus dem Anfrageformular inklusive der von Ihnen dort angegebenen Kontaktdaten zwecks Bearbeitung der Anfrage und für den Fall von Anschlussfragen bei uns gespeichert.</p>
-                    <p class="text-light small">Diese Daten werden an den externen Dienstleister <strong>Web3Forms</strong> weitergeleitet, um die Nachricht an unser E-Mail-Postfach zuzustellen. Die Verarbeitung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (sofern es um vorvertragliche Maßnahmen geht) oder Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effektiver Bearbeitung).</p>
-                </div>
-
-                <div class="privacy-section mb-4">
-                    <h5 class="text-purple-glow fw-bold text-uppercase">7. Verlinkung zu externen Diensten (Discord)</h5>
-                    <p class="text-light small">Diese Website verweist über Schaltflächen ggf. auf die Kommunikationsplattform <strong>Discord</strong>. Wir weisen darauf hin, dass wir keinen Einfluss darauf haben, wie Discord Ihre Daten verarbeitet, sobald Sie den entsprechenden Links folgen und die Plattform nutzen. Informationen zur Erhebung und Nutzung Ihrer Daten durch Discord finden Sie in den dortigen Datenschutzhinweisen unter <a href="https://discord.com/privacy" target="_blank" class="text-warning">discord.com/privacy</a>.</p>
-                </div>
-
-                <div class="privacy-section mb-4">
-                    <h5 class="text-purple-glow fw-bold text-uppercase">8. Ihre Rechte</h5>
-                    <p class="text-light small mb-0">Sie haben im Rahmen der geltenden gesetzlichen Bestimmungen jederzeit das Recht auf unentgeltliche Auskunft über Ihre gespeicherten personenbezogenen Daten, deren Herkunft und Empfänger und den Zweck der Datenverarbeitung und ggf. ein Recht auf Berichtigung oder Löschung dieser Daten. Hierzu sowie zu weiteren Fragen zum Thema Datenschutz können Sie sich jederzeit unter der im Impressum angegebenen E-Mail-Adresse an uns wenden.</p>
-                </div>
-                
-                <div class="text-center mt-5">
-                    <button class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-lg" onclick="switchView(state.currentUser ? 'dashboard' : 'landing')">
-                        <i class="bi bi-arrow-left me-2"></i> Zurück
-                    </button>
-                </div>
-            </div>
-        </section>
-        <!-- VIEW: IMPRESSUM -->
-        <section id="view-impressum" class="app-view">
-            <div class="content-card mx-auto text-center" style="max-width: 600px; padding: 40px;">
-                <h2 class="text-uppercase fw-bold mb-4 text-warning" style="border-bottom: 1px solid rgba(157,78,221,0.3); padding-bottom: 15px;">Impressum</h2>
-                
-                <div class="mb-4 pt-2">
-                    <h6 class="text-purple-glow fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Name des Inhabers</h6>
-                    <p class="text-white fw-bold fs-5 mb-0">Nico Anschau</p>
-                </div>
-                
-                <div class="mb-4" style="border-top: 1px dashed rgba(157,78,221,0.2); padding-top: 20px;">
-                    <h6 class="text-purple-glow fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Ort</h6>
-                    <p class="text-white fw-bold fs-5 mb-0">Hüffler</p>
-                </div>
-                
-                <div class="mb-4" style="border-top: 1px dashed rgba(157,78,221,0.2); padding-top: 20px;">
-                    <h6 class="text-purple-glow fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Kontakt</h6>
-                    <p class="mb-0"><a href="mailto:nico.anschau1998@gmail.com" class="text-warning text-decoration-none fw-bold fs-5">nico.anschau1998@gmail.com</a></p>
-                </div>
-
-                <div class="text-center mt-5">
-                    <button class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-lg" onclick="switchView(state.currentUser ? 'dashboard' : 'landing')">
-                        <i class="bi bi-arrow-left me-2"></i> Zurück
-                    </button>
-                </div>
-            </div>
-        </section>
-    </main>
 
     <footer>
         <div class="container text-center">
@@ -1013,3 +948,8 @@
     <script src="app.js"></script>
 </body>
 </html>
+
+
+
+
+
