@@ -1,4 +1,4 @@
-﻿/* =========================================
+/* =========================================
    1. SUPABASE KONFIGURATION & INIT
    ========================================= */
 const SUPABASE_URL = 'https://anxhzeovqgokcorvjttu.supabase.co';
@@ -2314,8 +2314,10 @@ async function dismissUsernameChange(notifId, oldName, newName) {
    ONLINE PRESENCE LOGIC
    ========================================= */
 let presenceChannel = null;
+let currentPresenceState = {};
 
 function initPresence() {
+    initGlobalChatListener();
     if (!state.currentUser) return;
     
     // Show the sidebar and toggle
@@ -2337,8 +2339,8 @@ function initPresence() {
 
     presenceChannel
         .on('presence', { event: 'sync' }, () => {
-            const newState = presenceChannel.presenceState();
-            renderOnlineUsers(newState);
+            currentPresenceState = presenceChannel.presenceState();
+            renderOnlineUsers();
         })
         .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
@@ -2351,6 +2353,7 @@ function initPresence() {
 }
 
 function stopPresence() {
+    stopGlobalChatListener();
     if (presenceChannel) {
         presenceChannel.unsubscribe();
         presenceChannel = null;
@@ -2359,7 +2362,8 @@ function stopPresence() {
     document.getElementById('onlineSidebarToggle')?.classList.add('d-none');
 }
 
-function renderOnlineUsers(presenceState) {
+function renderOnlineUsers() {
+    const presenceState = currentPresenceState;
     const listEl = document.getElementById('onlineUsersList');
     if (!listEl) return;
     
@@ -2375,7 +2379,11 @@ function renderOnlineUsers(presenceState) {
         const item = document.createElement('div');
         item.className = 'online-user-item';
         item.style.cursor = 'pointer';
-        item.innerHTML = `<div class="d-flex w-100 justify-content-between align-items-center"><div class="d-flex align-items-center flex-grow-1" onclick="showPublicProfile('` + escapeHTML(username) + `')"><div class="online-indicator"></div><span class="text-white fw-bold">` + escapeHTML(username) + `</span></div><button class="btn btn-sm btn-link text-warning p-0 ms-2" onclick="event.stopPropagation(); openDirectChat('` + escapeHTML(username) + `')" title="Chatten"><i class="bi bi-chat-dots-fill"></i></button></div>`;
+        let badgeHtml = '';
+        if (unreadDirectMessages[username] > 0) {
+            badgeHtml = '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">' + unreadDirectMessages[username] + '</span>';
+        }
+        item.innerHTML = `<div class="d-flex w-100 justify-content-between align-items-center"><div class="d-flex align-items-center flex-grow-1" onclick="showPublicProfile('` + escapeHTML(username) + `')"><div class="online-indicator"></div><span class="text-white fw-bold">` + escapeHTML(username) + `</span></div><button class="btn btn-sm btn-link text-warning p-0 ms-2 position-relative" onclick="event.stopPropagation(); openDirectChat('` + escapeHTML(username) + `')" title="Chatten"><i class="bi bi-chat-dots-fill"></i>` + badgeHtml + `</button></div>`;
         listEl.appendChild(item);
     }
     
@@ -2455,6 +2463,79 @@ async function showPublicProfile(username) {
 }
 
 /* =========================================
+   GLOBAL CHAT NOTIFICATIONS
+   ========================================= */
+let unreadDirectMessages = {}; 
+let globalChatSubscription = null;
+
+async function initGlobalChatListener() {
+    if (!state.currentUser) return;
+    
+    // Fetch initial unread messages count
+    let { data: unread } = await db.from('direct_messages')
+        .select('sender')
+        .eq('receiver', state.currentUser.username)
+        .eq('is_read', false);
+        
+    unreadDirectMessages = {};
+    if (unread) {
+        unread.forEach(msg => {
+            unreadDirectMessages[msg.sender] = (unreadDirectMessages[msg.sender] || 0) + 1;
+        });
+    }
+    renderOnlineUsers(); // Re-render to show any badges
+
+    if (globalChatSubscription) {
+        db.removeChannel(globalChatSubscription);
+    }
+    
+    globalChatSubscription = db.channel('global_direct_messages')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: 'receiver=eq.' + state.currentUser.username }, payload => {
+            const msg = payload.new;
+            if (activeDirectChatUser === msg.sender) {
+                // Chat window is open, mark as read
+                db.from('direct_messages').update({ is_read: true }).eq('id', msg.id).then();
+                playNotificationSound();
+            } else {
+                // Chat window is not open, increment badge
+                unreadDirectMessages[msg.sender] = (unreadDirectMessages[msg.sender] || 0) + 1;
+                renderOnlineUsers();
+                playNotificationSound();
+            }
+        })
+        .subscribe();
+}
+
+function stopGlobalChatListener() {
+    if (globalChatSubscription) {
+        db.removeChannel(globalChatSubscription);
+        globalChatSubscription = null;
+    }
+    unreadDirectMessages = {};
+}
+
+function playNotificationSound() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+        console.error("Audio play error", e);
+    }
+}
+
+/* =========================================
    DIRECT CHAT (1-on-1)
    ========================================= */
 let activeDirectChatUser = null;
@@ -2466,6 +2547,11 @@ async function openDirectChat(targetUser) {
 
     activeDirectChatUser = targetUser;
     document.getElementById("directChatTargetUser").textContent = targetUser;
+    if (unreadDirectMessages[targetUser]) {
+        delete unreadDirectMessages[targetUser];
+        renderOnlineUsers();
+        db.from('direct_messages').update({ is_read: true }).eq('sender', targetUser).eq('receiver', state.currentUser.username).then();
+    }
     
     // Initial load
     await loadDirectMessages();
@@ -2547,6 +2633,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
+
+
+
+
+
+
 
 
 
