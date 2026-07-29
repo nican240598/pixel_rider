@@ -132,6 +132,70 @@
             </div>
         </section>
 
+        <!-- VIEW: PROFILE -->
+        <section id="view-profile" class="app-view">
+            <div class="content-card mx-auto" style="max-width: 700px;">
+                <h3 class="text-uppercase fw-bold text-warning mb-4"><i class="bi bi-person-gear me-2"></i>Dein Profil</h3>
+                
+                <div class="mb-4 text-center">
+                    <h5 class="text-light">Aktueller Benutzername:</h5>
+                    <h2 class="text-purple-glow fw-bold" id="profileCurrentUsername">-</h2>
+                    <button class="btn btn-sm btn-outline-warning mt-2" onclick="requestUsernameChange()">
+                        <i class="bi bi-pencil-square me-1"></i> Namensänderung anfragen
+                    </button>
+                    <p class="text-muted small mt-2">Namen können nur durch einen Admin geändert werden.</p>
+                </div>
+
+                <hr class="border-secondary mb-4">
+                
+                <form id="profileForm" onsubmit="saveProfile(event)">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="label-custom">E-Mail Adresse</label>
+                            <input type="email" class="input-custom" id="profileEmail" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="label-custom">Neues Passwort (optional)</label>
+                            <input type="password" class="input-custom" id="profilePassword" placeholder="Leer lassen = nicht ändern">
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <h5 class="text-purple-glow fw-bold mb-3"><i class="bi bi-share-fill me-2"></i>Social Media Verknüpfungen</h5>
+                            <p class="text-muted small">Gib hier deine Benutzernamen ein. Diese werden als klickbare Links in der Garage und im Forum bei deinen Posts angezeigt.</p>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="label-custom"><i class="bi bi-instagram me-1 text-danger"></i>Instagram</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark text-muted border-secondary">@</span>
+                                <input type="text" class="form-control input-custom" id="profileIg" placeholder="username">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="label-custom"><i class="bi bi-tiktok me-1 text-light"></i>TikTok</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark text-muted border-secondary">@</span>
+                                <input type="text" class="form-control input-custom" id="profileTt" placeholder="username">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="label-custom"><i class="bi bi-youtube me-1 text-danger"></i>YouTube</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark text-muted border-secondary">@</span>
+                                <input type="text" class="form-control input-custom" id="profileYt" placeholder="Channel">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-5">
+                        <button type="submit" class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-lg" id="btnSaveProfile">
+                            <i class="bi bi-save me-2"></i> Profil Speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
         <!-- VIEW 3: GPX-AUSFAHRTEN -->
         <section id="view-gpx" class="app-view">
             <div class="content-card">

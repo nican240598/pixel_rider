@@ -223,6 +223,7 @@ function switchView(viewName) {
     else if (viewName === 'forum') { document.getElementById('view-forum')?.classList.add('active-view'); renderForumTopics(); }
     else if (viewName === 'garage') { document.getElementById('view-garage')?.classList.add('active-view'); renderGarage(); }
     else if (viewName === 'admin') { document.getElementById('view-admin')?.classList.add('active-view'); renderAdminPanel(); }
+    else if (viewName === 'profile') { document.getElementById('view-profile')?.classList.add('active-view'); renderProfile(); }
     else { 
         const target = document.getElementById(`view-${viewName}`); 
         if (target) target.classList.add('active-view'); 
@@ -264,7 +265,7 @@ function updateNavbar() {
         navLinks.innerHTML = `
             ${adminBellHtml}
             ${userBellHtml}
-            <span class="${roleColor} fw-bold me-3 user-role-badge"><i class="bi bi-shield-lock-fill me-1"></i>${state.currentUser.username}</span>
+            <span class="${roleColor} fw-bold me-3 user-role-badge" style="cursor:pointer;" onclick="switchView('profile')" title="Profil bearbeiten"><i class="bi bi-person-circle me-1"></i>${state.currentUser.username}</span>
             <button class="custom-nav-link border-0 bg-transparent" onclick="switchView('dashboard')">Dashboard</button>
             <button class="btn-logout ms-2" onclick="logout()">Logout</button>
         `;
@@ -1277,6 +1278,20 @@ async function renderForumTopics() {
     let query = db.from('forum_topics').select('*');
     if (currentForumCat !== 'all') query = query.eq('category', currentForumCat);
     let { data: topics } = await query;
+    let { data: users } = await db.from('users').select('username, social_ig, social_tiktok, social_youtube');
+    const userMap = {};
+    (users || []).forEach(u => userMap[u.username] = u);
+    const getSocials = (uName) => {
+        const p = userMap[uName];
+        if(!p) return '';
+        let html = '<span class="ms-2">';
+        if (p.social_ig) html += `<a href="https://instagram.com/${p.social_ig}" target="_blank" onclick="event.stopPropagation();" class="text-danger mx-1"><i class="bi bi-instagram"></i></a>`;
+        if (p.social_tiktok) html += `<a href="https://tiktok.com/@${p.social_tiktok}" target="_blank" onclick="event.stopPropagation();" class="text-light mx-1"><i class="bi bi-tiktok"></i></a>`;
+        if (p.social_youtube) html += `<a href="https://youtube.com/@${p.social_youtube}" target="_blank" onclick="event.stopPropagation();" class="text-danger mx-1"><i class="bi bi-youtube"></i></a>`;
+        html += '</span>';
+        return html === '<span class="ms-2"></span>' ? '' : html;
+    };
+
     const grid = document.getElementById("forumGrid");
     if(grid) {
         grid.innerHTML = (topics || []).map(t => {
@@ -1293,7 +1308,7 @@ async function renderForumTopics() {
                 </div>
                 <h5 class="thread-title text-warning mt-1">${t.title}</h5>
                 <p class="text-light small mb-2">${t.content}</p>
-                <div class="d-flex justify-content-between align-items-center"><span class="small text-purple-glow fw-bold">Von ${t.author}</span></div>
+                <div class="d-flex justify-content-between align-items-center"><span class="small text-purple-glow fw-bold">Von ${t.author}${getSocials(t.author)}</span></div>
                 ${adminControlsHtml}
             </div>`;
         }).join('') || '<p class="text-center text-purple-glow">Keine Beiträge.</p>';
@@ -1338,11 +1353,25 @@ async function openChatTopic(id, title) {
     activeChatTopicId = id;
     document.getElementById("chatModalTitle").textContent = title;
     let { data: topic } = await db.from('forum_topics').select('*').eq('id', id).single();
+    let { data: users } = await db.from('users').select('username, social_ig, social_tiktok, social_youtube');
+    const userMap = {};
+    (users || []).forEach(u => userMap[u.username] = u);
+    const getSocials = (uName) => {
+        const p = userMap[uName];
+        if(!p) return '';
+        let html = '<span class="ms-2">';
+        if (p.social_ig) html += `<a href="https://instagram.com/${p.social_ig}" target="_blank" onclick="event.stopPropagation();" class="text-danger mx-1"><i class="bi bi-instagram"></i></a>`;
+        if (p.social_tiktok) html += `<a href="https://tiktok.com/@${p.social_tiktok}" target="_blank" onclick="event.stopPropagation();" class="text-light mx-1"><i class="bi bi-tiktok"></i></a>`;
+        if (p.social_youtube) html += `<a href="https://youtube.com/@${p.social_youtube}" target="_blank" onclick="event.stopPropagation();" class="text-danger mx-1"><i class="bi bi-youtube"></i></a>`;
+        html += '</span>';
+        return html === '<span class="ms-2"></span>' ? '' : html;
+    };
+
     document.getElementById("chatMessageList").innerHTML = `
-        <div class="chat-bubble chat-bubble-other"><div class="chat-author">${topic.author}</div><div>${topic.content}</div></div>
+        <div class="chat-bubble chat-bubble-other"><div class="chat-author">${topic.author}${getSocials(topic.author)}</div><div>${topic.content}</div></div>
     ` + (topic.replies || []).map(r => `
         <div class="chat-bubble ${r.author === state.currentUser.username ? 'chat-bubble-own' : 'chat-bubble-other'}">
-            <div class="chat-author">${r.author}</div><div>${r.text}</div>
+            <div class="chat-author">${r.author}${getSocials(r.author)}</div><div>${r.text}</div>
         </div>
     `).join('');
     showModal("chatTopicModal");
@@ -1653,6 +1682,20 @@ async function renderGarage() {
     let { data: bikes, error } = await db.from('pixel_garage').select('*');
     if (error) { grid.innerHTML = '<p class="text-center text-danger w-100">Fehler beim Laden der Garage.</p>'; return; }
 
+    let { data: users } = await db.from('users').select('username, social_ig, social_tiktok, social_youtube');
+    const userMap = {};
+    (users || []).forEach(u => userMap[u.username] = u);
+    const getSocials = (uName) => {
+        const p = userMap[uName];
+        if(!p) return '';
+        let html = '<span class="ms-2" style="font-size:0.8rem;">';
+        if (p.social_ig) html += `<a href="https://instagram.com/${p.social_ig}" target="_blank" onclick="event.stopPropagation();" class="text-danger mx-1"><i class="bi bi-instagram"></i></a>`;
+        if (p.social_tiktok) html += `<a href="https://tiktok.com/@${p.social_tiktok}" target="_blank" onclick="event.stopPropagation();" class="text-light mx-1"><i class="bi bi-tiktok"></i></a>`;
+        if (p.social_youtube) html += `<a href="https://youtube.com/@${p.social_youtube}" target="_blank" onclick="event.stopPropagation();" class="text-danger mx-1"><i class="bi bi-youtube"></i></a>`;
+        html += '</span>';
+        return html === '<span class="ms-2" style="font-size:0.8rem;"></span>' ? '' : html;
+    };
+
     // Randomizer: bei jedem Laden zufällige Reihenfolge
     allGarageBikes = shuffleArray(bikes || []);
 
@@ -1699,7 +1742,7 @@ async function renderGarage() {
                 </div>`;
         }
 
-        const shortMods = b.mods && b.mods.length > 70 ? b.mods.substring(0, 70) + '…' : (b.mods || 'Keine Angaben');
+        const shortMods = b.mods && b.mods.length > 70 ? b.mods.substring(0, 70) + '...' : (b.mods || 'Keine Angaben');
         const modsDisplay = shortMods === 'Keine Umbauten angegeben.' || shortMods === 'Keine Angaben'
             ? '<span class="text-muted">Serienzustand</span>'
             : shortMods;
@@ -1711,7 +1754,7 @@ async function renderGarage() {
                     ${firstImg ? `<img src="${firstImg}" class="garage-card-img" loading="lazy" alt="${b.model}">` : '<div class="garage-card-img garage-card-img-placeholder"><i class="bi bi-camera"></i></div>'}
                     <div class="garage-card-img-overlay"></div>
                     ${imgCount > 1 ? `<span class="garage-img-badge"><i class="bi bi-images"></i> ${imgCount}</span>` : ''}
-                    <div class="garage-card-owner-chip"><i class="bi bi-person-fill me-1"></i>${b.owner}</div>
+                    <div class="garage-card-owner-chip"><i class="bi bi-person-fill me-1"></i>${b.owner}${getSocials(b.owner)}</div>
                 </div>
                 <div class="garage-card-body">
                     <h5 class="garage-card-title">${b.model}</h5>
@@ -2095,4 +2138,76 @@ async function openUserNotificationsModal() {
 async function markNotificationRead(notifId) {
     await db.from('user_notifications').update({ is_read: true }).eq('id', notifId);
     openUserNotificationsModal();
+}
+
+// ==========================================
+// PROFILE FUNCTIONS
+// ==========================================
+
+async function renderProfile() {
+    if (!state.currentUser) return;
+    document.getElementById('profileCurrentUsername').innerText = state.currentUser.username;
+    document.getElementById('profileEmail').value = state.currentUser.email || '';
+    document.getElementById('profilePassword').value = '';
+    
+    // Fetch user details for socials
+    let { data: user } = await db.from('users').select('*').eq('username', state.currentUser.username).single();
+    if (user) {
+        document.getElementById('profileIg').value = user.social_ig || '';
+        document.getElementById('profileTt').value = user.social_tiktok || '';
+        document.getElementById('profileYt').value = user.social_youtube || '';
+    }
+}
+
+async function saveProfile(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSaveProfile');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Speichert...';
+    btn.disabled = true;
+
+    const email = document.getElementById('profileEmail').value.trim();
+    const password = document.getElementById('profilePassword').value.trim();
+    const ig = document.getElementById('profileIg').value.trim();
+    const tt = document.getElementById('profileTt').value.trim();
+    const yt = document.getElementById('profileYt').value.trim();
+
+    const updates = { email, social_ig: ig, social_tiktok: tt, social_youtube: yt };
+
+    if (password) {
+        updates.password = await hashPassword(password);
+    }
+
+    const { error } = await db.from('users').update(updates).eq('username', state.currentUser.username);
+    
+    btn.innerHTML = '<i class="bi bi-save me-2"></i> Profil Speichern';
+    btn.disabled = false;
+
+    if (error) {
+        showCustomAlert('Fehler', 'Profil konnte nicht gespeichert werden.', 'bi-x-circle-fill', 'text-danger');
+    } else {
+        // Update local state if email changed
+        state.currentUser.email = email;
+        localStorage.setItem('app_user', JSON.stringify(state.currentUser));
+        showCustomAlert('Erfolg', 'Dein Profil wurde erfolgreich aktualisiert.', 'bi-check-circle-fill', 'text-success');
+    }
+}
+
+async function requestUsernameChange() {
+    const newName = prompt("Wie soll dein neuer Benutzername lauten?");
+    if (!newName || newName.trim() === '') return;
+    if (newName.trim() === state.currentUser.username) {
+        alert("Das ist bereits dein aktueller Name.");
+        return;
+    }
+
+    const message = `User ${state.currentUser.username} beantragt eine Namensänderung auf: ${newName.trim()}`;
+    await db.from('user_notifications').insert([{
+        target_username: 'SYSTEM_ADMIN',
+        message: message,
+        reason: 'Namensänderung beantragt',
+        type: 'warning',
+        created_by: state.currentUser.username
+    }]);
+
+    showCustomAlert('Anfrage gesendet', 'Dein Änderungswunsch wurde an die Admins weitergeleitet.', 'bi-send-check', 'text-success');
 }
