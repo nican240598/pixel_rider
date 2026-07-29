@@ -5,6 +5,7 @@ const SUPABASE_URL = 'https://anxhzeovqgokcorvjttu.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_F9C_e_QstTeAnI21JZ-pCQ_ZSwCCznr'; 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+
 /* =========================================
    2. STATE, HASHING, MODALS & UI NAVIGATION
    ========================================= */
@@ -241,23 +242,34 @@ function updateNavbar() {
         if (state.currentUser.isAdmin) roleColor = "text-danger"; 
         else if (state.currentUser.isModerator) roleColor = "text-info"; 
 
-        let bellHtml = '';
+        // Admin/Mod Bell (für Passwort-Resets & Invite-Anfragen)
+        let adminBellHtml = '';
         if (state.currentUser.isAdmin || state.currentUser.isModerator) {
-            bellHtml = `
-                <div class="position-relative me-3" style="cursor: pointer;" onclick="openPasswordResetsModal()" title="Admin Benachrichtigungen">
-                    <i class="bi bi-bell-fill text-white fs-5"></i>
+            adminBellHtml = `
+                <div class="position-relative me-1" style="cursor: pointer;" onclick="openPasswordResetsModal()" title="Admin-Benachrichtigungen">
+                    <i class="bi bi-shield-shaded text-warning fs-5"></i>
                     <span id="adminBellBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.6rem;">0</span>
                 </div>
             `;
         }
 
+        // User Bell (für ALLE User - Benachrichtigungen z.B. von Mod-Aktionen)
+        let userBellHtml = `
+            <div class="position-relative me-3" style="cursor: pointer;" onclick="openUserNotificationsModal()" title="Deine Benachrichtigungen">
+                <i class="bi bi-bell-fill text-white fs-5"></i>
+                <span id="userBellBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.6rem;">0</span>
+            </div>
+        `;
+
         navLinks.innerHTML = `
-            ${bellHtml}
+            ${adminBellHtml}
+            ${userBellHtml}
             <span class="${roleColor} fw-bold me-3 user-role-badge"><i class="bi bi-shield-lock-fill me-1"></i>${state.currentUser.username}</span>
             <button class="custom-nav-link border-0 bg-transparent" onclick="switchView('dashboard')">Dashboard</button>
             <button class="btn-logout ms-2" onclick="logout()">Logout</button>
         `;
         if (state.currentUser.isAdmin || state.currentUser.isModerator) checkAdminNotifications();
+        checkUserNotifications();
     } else {
         navLinks.innerHTML = `<button class="custom-nav-link border-0 bg-transparent" onclick="showModal('authModal')">Login / Registrieren</button>`;
     }
@@ -1433,79 +1445,552 @@ document.getElementById("poiForm")?.addEventListener("submit", async function(e)
 });
 
 /* =========================================
-   9. PIXEL GARAGE MODUL (MODUL 1)
+   9. PIXEL GARAGE MODUL – VOLLVERSION
+      • bis zu 8 Bilder pro Eintrag
+      • Lightbox-Galerie (Durchklicken)
+      • Besitzer kann eigenen Beitrag bearbeiten
+      • Admin/Mod: Bearbeiten/Löschen mit Pflicht-Begründung
+      • User-Benachrichtigungen bei Moderation
    ========================================= */
+
+let activeEditGarageId = null;
+let garageNewImagesToAdd = [];
+let garageExistingImages = [];
+let pendingModerationAction = null; // { type: 'edit'|'delete', bikeId, ownerId }
+
+// ---- HILFSFUNKTION: Bilder sicher parsen ----
+function parseGarageImages(b) {
+    // Neues Format: images als JSON-String
+    if (b.images) {
+        if (Array.isArray(b.images)) return b.images.filter(Boolean);
+        try { const parsed = JSON.parse(b.images); if (Array.isArray(parsed)) return parsed.filter(Boolean); } catch(e) {}
+        // Fallback: wenn es ein einzelner String ist (Base64)
+        if (typeof b.images === 'string' && b.images.startsWith('data:')) return [b.images];
+    }
+    // Altes Format: image_data
+    if (b.image_data) return [b.image_data];
+    return [];
+}
+
+// ---- Fisher-Yates Shuffle ----
+function shuffleArray(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+// ---- UPLOAD ----
 document.getElementById("bikeUploadForm")?.addEventListener("submit", async function(e) {
     e.preventDefault();
+    const submitBtn = this.querySelector('[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Wird hochgeladen...';
+
     const model = document.getElementById("garageBikeModel").value.trim();
-    const mods = document.getElementById("garageBikeMods").value.trim();
+    const mods  = document.getElementById("garageBikeMods").value.trim();
     const fileInput = document.getElementById("garageBikeImage");
 
-    if (fileInput.files.length === 0) return;
-    const file = fileInput.files[0];
-    if (file.size > 1.5 * 1024 * 1024) { 
-        showCustomAlert("Bild ist zu groß! Bitte max. 1.5 MB.", "Fehler", "warning"); return;
+    if (fileInput.files.length === 0) {
+        showCustomAlert("Bitte wähle mindestens ein Bild aus.", "Fehler", "warning");
+        submitBtn.disabled = false; submitBtn.innerHTML = 'Ab in den Showroom'; return;
     }
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-        let { error } = await db.from('pixel_garage').insert([{ 
-            owner: state.currentUser.username, 
-            model: model, 
-            mods: mods || 'Keine Umbauten angegeben.', 
-            image_data: reader.result 
-        }]);
+    const files = Array.from(fileInput.files).slice(0, 8);
+    const tooBig = files.find(f => f.size > 1.5 * 1024 * 1024);
+    if (tooBig) {
+        showCustomAlert(`"${tooBig.name}" ist zu groß! Bitte max. 1.5 MB pro Bild.`, "Fehler", "warning");
+        submitBtn.disabled = false; submitBtn.innerHTML = 'Ab in den Showroom'; return;
+    }
 
-        if (error) { showCustomAlert("Fehler beim Hochladen: " + error.message, "Fehler", "danger"); } 
-        else {
-            document.getElementById("bikeUploadForm").reset();
-            hideModal("createBikeModal"); renderGarage();
+    let imageDataArray = [];
+    try {
+        for (const file of files) {
+            const base64 = await new Promise((res, rej) => {
+                const r = new FileReader();
+                r.readAsDataURL(file);
+                r.onload = () => res(r.result);
+                r.onerror = rej;
+            });
+            imageDataArray.push(base64);
         }
-    };
+    } catch (err) {
+        showCustomAlert('Fehler beim Lesen der Bilder: ' + err.message, 'Fehler', 'danger');
+        submitBtn.disabled = false; submitBtn.innerHTML = 'Ab in den Showroom'; return;
+    }
+
+    // Als JSON-String speichern (kompatibel mit text-Spalte in Supabase)
+    const { error } = await db.from('pixel_garage').insert([{ 
+        owner: state.currentUser.username, 
+        model, 
+        mods: mods || 'Keine Umbauten angegeben.', 
+        images: JSON.stringify(imageDataArray)
+    }]);
+
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = 'Ab in den Showroom';
+
+    if (error) {
+        showCustomAlert('Hochladen fehlgeschlagen: ' + error.message, 'Datenbankfehler', 'danger');
+    } else {
+        document.getElementById("bikeUploadForm").reset();
+        hideModal("createBikeModal");
+        showCustomAlert('Dein Bike ist jetzt im Showroom! 🏍️', 'Erfolg', 'success');
+        renderGarage();
+    }
 });
 
+// ---- RENDER (mit Randomizer & neuem Design) ----
 async function renderGarage() {
-    let { data: bikes } = await db.from('pixel_garage').select('*').order('created_at', { ascending: false });
-    allGarageBikes = bikes || []; 
-
     const grid = document.getElementById("garageGrid");
-    if(grid) {
-        grid.innerHTML = allGarageBikes.map(b => {
-            let adminControls = (state.currentUser.isAdmin || state.currentUser.isModerator || state.currentUser.username === b.owner) ? `
-                <button class="btn btn-sm btn-outline-danger mt-3 w-100" onclick="event.stopPropagation(); deleteGarageBike('${b.id}')"><i class="bi bi-trash"></i> Entfernen</button>` : '';
+    if(!grid) return;
+    grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-purple" role="status"></div></div>';
 
-            let shortMods = b.mods.length > 50 ? b.mods.substring(0, 50) + "..." : b.mods;
+    let { data: bikes, error } = await db.from('pixel_garage').select('*');
+    if (error) { grid.innerHTML = '<p class="text-center text-danger w-100">Fehler beim Laden der Garage.</p>'; return; }
 
-            return `
-            <div class="col-md-6 col-xl-4">
-                <div class="garage-card h-100 d-flex flex-column" onclick="openBikePreview('${b.id}')">
-                    <img src="${b.image_data}" class="img-fluid rounded-4 mb-3 w-100" style="height: 220px; object-fit: cover; border: 1px solid rgba(197, 160, 26, 0.4);">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge bg-purple-glow text-uppercase shadow-sm"><i class="bi bi-person-fill"></i> ${b.owner}</span>
-                    </div>
-                    <h4 class="text-warning text-uppercase fw-bold mb-2">${b.model}</h4>
-                    <p class="text-light small mb-0 flex-grow-1"><i class="bi bi-tools text-muted"></i> ${shortMods}</p>
-                    ${adminControls}
-                </div>
-            </div>`;
-        }).join('') || '<p class="text-center text-purple-glow w-100">Die Garage ist noch leer.</p>';
+    // Randomizer: bei jedem Laden zufällige Reihenfolge
+    allGarageBikes = shuffleArray(bikes || []);
+
+    if (allGarageBikes.length === 0) {
+        grid.innerHTML = `
+        <div class="col-12">
+            <div class="text-center py-5" style="border: 2px dashed rgba(157,78,221,0.3); border-radius: 24px;">
+                <i class="bi bi-bicycle" style="font-size:4rem; color: var(--brand-purple-glow); opacity:0.5;"></i>
+                <p class="text-purple-glow mt-3 mb-1 fw-bold">Die Garage ist noch leer.</p>
+                <p class="text-muted small">Sei der Erste und stell dein Bike in den Showroom!</p>
+            </div>
+        </div>`;
+        return;
     }
+
+    grid.innerHTML = allGarageBikes.map(b => {
+        const imgs = parseGarageImages(b);
+        const firstImg = imgs[0] || '';
+        const imgCount = imgs.length;
+
+        const isOwner = state.currentUser.username === b.owner;
+        const isMod = state.currentUser.isAdmin || state.currentUser.isModerator;
+
+        let controlsHtml = '';
+        if (isOwner) {
+            controlsHtml = `
+                <div class="garage-card-actions">
+                    <button class="garage-action-btn edit" onclick="event.stopPropagation(); openGarageEditModal('${b.id}', false)">
+                        <i class="bi bi-pencil-fill"></i> Bearbeiten
+                    </button>
+                    <button class="garage-action-btn delete" onclick="event.stopPropagation(); garageOwnerDelete('${b.id}')">
+                        <i class="bi bi-trash-fill"></i> Löschen
+                    </button>
+                </div>`;
+        } else if (isMod) {
+            controlsHtml = `
+                <div class="garage-card-actions">
+                    <button class="garage-action-btn mod-edit" onclick="event.stopPropagation(); openModerationModal('edit', '${b.id}', '${b.owner}')">
+                        <i class="bi bi-shield-exclamation"></i> Bearbeiten
+                    </button>
+                    <button class="garage-action-btn mod-delete" onclick="event.stopPropagation(); openModerationModal('delete', '${b.id}', '${b.owner}')">
+                        <i class="bi bi-shield-x"></i> Löschen
+                    </button>
+                </div>`;
+        }
+
+        const shortMods = b.mods && b.mods.length > 70 ? b.mods.substring(0, 70) + '…' : (b.mods || 'Keine Angaben');
+        const modsDisplay = shortMods === 'Keine Umbauten angegeben.' || shortMods === 'Keine Angaben'
+            ? '<span class="text-muted">Serienzustand</span>'
+            : shortMods;
+
+        return `
+        <div class="col-sm-6 col-xl-4">
+            <div class="garage-card-v2" onclick="openBikePreview('${b.id}')">
+                <div class="garage-card-img-wrap">
+                    ${firstImg ? `<img src="${firstImg}" class="garage-card-img" loading="lazy" alt="${b.model}">` : '<div class="garage-card-img garage-card-img-placeholder"><i class="bi bi-camera"></i></div>'}
+                    <div class="garage-card-img-overlay"></div>
+                    ${imgCount > 1 ? `<span class="garage-img-badge"><i class="bi bi-images"></i> ${imgCount}</span>` : ''}
+                    <div class="garage-card-owner-chip"><i class="bi bi-person-fill me-1"></i>${b.owner}</div>
+                </div>
+                <div class="garage-card-body">
+                    <h5 class="garage-card-title">${b.model}</h5>
+                    <p class="garage-card-mods"><i class="bi bi-tools me-1"></i>${modsDisplay}</p>
+                    <div class="garage-card-footer">
+                        <span class="garage-card-click-hint"><i class="bi bi-zoom-in me-1"></i>Galerie öffnen</span>
+                    </div>
+                </div>
+                ${controlsHtml}
+            </div>
+        </div>`;
+    }).join('');
 }
 
+// ---- LIGHTBOX PREVIEW ----
 function openBikePreview(bikeId) {
-    let b = allGarageBikes.find(bike => bike.id == bikeId);
+    let b = allGarageBikes.find(bike => String(bike.id) === String(bikeId));
     if(!b) return;
-    document.getElementById("bikeModalTitle").textContent = b.model;
-    document.getElementById("bikeModalOwner").textContent = b.owner;
-    document.getElementById("bikeModalImage").src = b.image_data;
-    document.getElementById("bikeModalMods").textContent = b.mods;
-    showModal("bikePreviewModal");
+    const imgs = parseGarageImages(b);
+    if (imgs.length === 0) { showCustomAlert('Dieses Bike hat noch keine Bilder.', 'Galerie', 'warning'); return; }
+
+    // Modal befüllen
+    const innerEl = document.getElementById("garageCarouselInner");
+    const titleEl = document.getElementById("garageModalTitle");
+    const ownerEl = document.getElementById("garageModalOwner");
+    const modsEl  = document.getElementById("garageModalMods");
+    const counterEl = document.getElementById("garageImgCounter");
+
+    if(!innerEl) return;
+
+    titleEl.textContent = b.model;
+    ownerEl.textContent = b.owner;
+    modsEl.textContent  = b.mods || 'Keine Umbauten angegeben.';
+
+    innerEl.innerHTML = imgs.map((src, idx) => `
+        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+            <img src="${src}" class="d-block w-100" style="height: 60vh; object-fit: contain; background: #000;" alt="Bike Bild ${idx+1}">
+        </div>
+    `).join('');
+
+    counterEl.textContent = `1 / ${imgs.length}`;
+
+    // Counter bei Slide-Wechsel aktualisieren
+    const carouselEl = document.getElementById("garageCarousel");
+    carouselEl.removeEventListener('slid.bs.carousel', carouselEl._counterHandler || (() => {}));
+    carouselEl._counterHandler = (e) => {
+        counterEl.textContent = `${e.to + 1} / ${imgs.length}`;
+    };
+    carouselEl.addEventListener('slid.bs.carousel', carouselEl._counterHandler);
+
+    showModal("garagePreviewModal");
 }
 
-async function deleteGarageBike(bikeId) {
-    if (await showCustomConfirm("Möchtest du dieses Bike wirklich entfernen?", "Bike löschen")) {
+// ---- BESITZER: BEARBEITEN ----
+async function openGarageEditModal(bikeId, isModerationEdit) {
+    let b = allGarageBikes.find(bike => String(bike.id) === String(bikeId));
+    if(!b) return;
+    activeEditGarageId = bikeId;
+    garageExistingImages = parseGarageImages(b); // Korrekte JSON-Dekodierung
+    garageNewImagesToAdd = [];
+
+    document.getElementById("editGarageBikeModel").value = b.model;
+    document.getElementById("editGarageBikeMods").value = b.mods || '';
+    document.getElementById("editGarageBikeImage").value = '';
+    renderEditGarageExistingImages();
+    showModal("editBikeModal");
+}
+
+function renderEditGarageExistingImages() {
+    const container = document.getElementById("editGarageExistingImgs");
+    const countEl   = document.getElementById("editGarageImgCount");
+    const total = garageExistingImages.length + garageNewImagesToAdd.length;
+    if(!container) return;
+
+    countEl.textContent = total;
+    container.innerHTML = '';
+
+    garageExistingImages.forEach((src, idx) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb-preview-item';
+        thumb.innerHTML = `
+            <img src="${src}" class="thumb-preview-img">
+            <button type="button" class="thumb-del-btn" onclick="removeExistingGarageImg(${idx})" title="Bild entfernen"><i class="bi bi-x"></i></button>
+        `;
+        container.appendChild(thumb);
+    });
+
+    garageNewImagesToAdd.forEach((src, idx) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb-preview-item';
+        thumb.style.border = '1px solid #198754';
+        thumb.innerHTML = `
+            <img src="${src}" class="thumb-preview-img">
+            <button type="button" class="thumb-del-btn" style="background:rgba(25,135,84,0.9)" onclick="removeNewGarageImg(${idx})" title="Entfernen"><i class="bi bi-x"></i></button>
+        `;
+        container.appendChild(thumb);
+    });
+
+    if (total === 0) container.innerHTML = '<span class="text-muted small align-self-center mx-auto">Keine Bilder vorhanden</span>';
+}
+
+function removeExistingGarageImg(idx) {
+    garageExistingImages.splice(idx, 1);
+    renderEditGarageExistingImages();
+}
+function removeNewGarageImg(idx) {
+    garageNewImagesToAdd.splice(idx, 1);
+    renderEditGarageExistingImages();
+}
+
+document.getElementById("editGarageBikeImage")?.addEventListener('change', function() {
+    const total = garageExistingImages.length + garageNewImagesToAdd.length;
+    const remaining = 8 - total;
+    if (remaining <= 0) { showCustomAlert('Maximal 8 Bilder erlaubt!', 'Limit', 'warning'); this.value = ''; return; }
+    const files = Array.from(this.files).slice(0, remaining);
+    Promise.all(files.map(f => new Promise(res => { const r = new FileReader(); r.readAsDataURL(f); r.onload = () => res(r.result); })))
+        .then(results => { garageNewImagesToAdd.push(...results); renderEditGarageExistingImages(); this.value = ''; });
+});
+
+document.getElementById("editBikeForm")?.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    if(!activeEditGarageId) return;
+    const model = document.getElementById("editGarageBikeModel").value.trim();
+    const mods  = document.getElementById("editGarageBikeMods").value.trim();
+    const allImages = [...garageExistingImages, ...garageNewImagesToAdd];
+
+    if (allImages.length === 0) { showCustomAlert('Mindestens ein Bild ist erforderlich!', 'Fehler', 'warning'); return; }
+
+    await db.from('pixel_garage').update({ model, mods: mods || 'Keine Umbauten angegeben.', images: JSON.stringify(allImages) }).eq('id', activeEditGarageId);
+    hideModal('editBikeModal');
+    activeEditGarageId = null;
+    renderGarage();
+});
+
+async function garageOwnerDelete(bikeId) {
+    if (await showCustomConfirm('Möchtest du dieses Bike wirklich aus der Garage entfernen?', 'Bike löschen')) {
         await db.from('pixel_garage').delete().eq('id', bikeId);
         renderGarage();
     }
+}
+
+// ---- ADMIN / MOD: MODERATION MIT PFLICHT-BEGRÜNDUNG ----
+function openModerationModal(actionType, bikeId, ownerUsername) {
+    pendingModerationAction = { type: actionType, bikeId, ownerUsername };
+    const titleEl = document.getElementById('moderationModalTitle');
+    const descEl  = document.getElementById('moderationModalDesc');
+    const submitBtn = document.getElementById('moderationSubmitBtn');
+    const reasonInput = document.getElementById('moderationReasonInput');
+
+    if (!titleEl) return;
+    reasonInput.value = '';
+
+    if (actionType === 'edit') {
+        titleEl.innerHTML = '<i class="bi bi-pencil-fill me-2"></i>Beitrag Bearbeiten (Mod)';
+        descEl.textContent = `Du bearbeitest den Garage-Eintrag von "${ownerUsername}" als Moderator. Bitte gib eine verbindliche Begründung an, die dem User mitgeteilt wird.`;
+        submitBtn.textContent = 'Weiter zum Bearbeiten';
+        submitBtn.className = 'btn btn-warning rounded-pill px-4 fw-bold shadow-lg flex-grow-1';
+    } else {
+        titleEl.innerHTML = '<i class="bi bi-trash-fill me-2"></i>Beitrag Löschen (Mod)';
+        descEl.textContent = `Du löschst den Garage-Eintrag von "${ownerUsername}" als Moderator. Bitte gib eine verbindliche Begründung an, die dem User mitgeteilt wird.`;
+        submitBtn.textContent = 'Löschen & Benachrichtigung senden';
+        submitBtn.className = 'btn btn-danger rounded-pill px-4 fw-bold shadow-lg flex-grow-1';
+    }
+
+    showModal('moderationReasonModal');
+}
+
+document.getElementById('moderationReasonForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (!pendingModerationAction) return;
+
+    const reason = document.getElementById('moderationReasonInput').value.trim();
+    if (!reason) { showCustomAlert('Begründung ist Pflicht!', 'Fehler', 'warning'); return; }
+
+    const { type, bikeId, ownerUsername } = pendingModerationAction;
+    const b = allGarageBikes.find(bike => String(bike.id) === String(bikeId));
+    const bikeModel = b ? b.model : 'Unbekanntes Modell';
+
+    hideModal('moderationReasonModal');
+
+    if (type === 'delete') {
+        await db.from('pixel_garage').delete().eq('id', bikeId);
+        // Benachrichtigung an User senden
+        await sendUserNotification(
+            ownerUsername,
+            `<i class="bi bi-trash-fill text-danger me-1"></i> Dein Garage-Eintrag <b>"${bikeModel}"</b> wurde von einem Moderator entfernt.`,
+            reason,
+            'danger'
+        );
+        pendingModerationAction = null;
+        renderGarage();
+        showCustomAlert(`Eintrag gelöscht. ${ownerUsername} wurde benachrichtigt.`, 'Erledigt', 'success');
+    } else if (type === 'edit') {
+        // Begründung zwischenspeichern, dann Edit-Modal öffnen
+        pendingModerationAction.reason = reason;
+        // Benachrichtigung JETZT senden (Mod hat bearbeitet)
+        // Eigentliches Speichern passiert im editBikeForm submit
+        // Wir merken uns die Reason für nach dem Submit
+        openGarageEditModal(bikeId, true);
+    }
+});
+
+// Wenn Mod-Edit gespeichert wird, Benachrichtigung schicken
+const _origEditBikeSubmit = document.getElementById('editBikeForm');
+if (_origEditBikeSubmit) {
+    _origEditBikeSubmit.addEventListener('submit', async function() {
+        // Nur wenn es eine Moderation-Aktion ist und die Reason schon gesetzt wurde
+        if (pendingModerationAction && pendingModerationAction.reason) {
+            const { ownerUsername, reason } = pendingModerationAction;
+            const b = allGarageBikes.find(bike => String(bike.id) === String(activeEditGarageId));
+            const bikeModel = b ? b.model : 'Unbekanntes Modell';
+            await sendUserNotification(
+                ownerUsername,
+                `<i class="bi bi-pencil-fill text-warning me-1"></i> Dein Garage-Eintrag <b>"${bikeModel}"</b> wurde von einem Moderator bearbeitet.`,
+                reason,
+                'warning'
+            );
+            pendingModerationAction = null;
+        }
+    });
+}
+
+// ---- USER BENACHRICHTIGUNGEN ----
+async function sendUserNotification(toUsername, messageHtml, reason, type = 'warning') {
+    await db.from('user_notifications').insert([{
+        target_username: toUsername,
+        message: messageHtml,
+        reason: reason,
+        type: type,
+        is_read: false,
+        created_by: state.currentUser.username
+    }]);
+}
+
+async function checkUserNotifications() {
+    if (!state.currentUser) return;
+    let { data: notifs } = await db.from('user_notifications')
+        .select('id')
+        .eq('target_username', state.currentUser.username)
+        .eq('is_read', false);
+    const count = notifs ? notifs.length : 0;
+    const badge = document.getElementById('userBellBadge');
+    if (badge) {
+        if (count > 0) { badge.textContent = count; badge.classList.remove('d-none'); }
+        else { badge.classList.add('d-none'); }
+    }
+}
+
+// ---- BENACHRICHTIGUNGEN: 30-Tage-Bereinigung ----
+async function purgeOldNotifications() {
+    // Löscht gelesene Benachrichtigungen die älter als 30 Tage sind
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    await db.from('user_notifications')
+        .delete()
+        .eq('is_read', true)
+        .lt('created_at', cutoff.toISOString());
+}
+
+// ---- TAB-WECHSEL ----
+function switchNotifTab(tab) {
+    const unreadPanel  = document.getElementById('notifPanelUnread');
+    const archivePanel = document.getElementById('notifPanelArchive');
+    const tabUnread    = document.getElementById('tabUnread');
+    const tabArchive   = document.getElementById('tabArchive');
+    if (!unreadPanel) return;
+
+    if (tab === 'unread') {
+        unreadPanel.classList.remove('d-none');
+        archivePanel.classList.add('d-none');
+        tabUnread.classList.add('active');
+        tabArchive.classList.remove('active');
+    } else {
+        unreadPanel.classList.add('d-none');
+        archivePanel.classList.remove('d-none');
+        tabArchive.classList.add('active');
+        tabUnread.classList.remove('active');
+    }
+}
+
+// ---- BENACHRICHTIGUNGEN ÖFFNEN (mit Tabs) ----
+async function openUserNotificationsModal() {
+    if (!state.currentUser) return;
+
+    // Bereinigung im Hintergrund
+    purgeOldNotifications();
+
+    // Alle Benachrichtigungen laden
+    let { data: notifs } = await db.from('user_notifications')
+        .select('*')
+        .eq('target_username', state.currentUser.username)
+        .order('created_at', { ascending: false });
+
+    const panelUnread  = document.getElementById('notifPanelUnread');
+    const panelArchive = document.getElementById('notifPanelArchive');
+    const countUnread  = document.getElementById('notifUnreadCount');
+    const countArchive = document.getElementById('notifArchiveCount');
+    if (!panelUnread) return;
+
+    const unread  = (notifs || []).filter(n => !n.is_read);
+    const archive = (notifs || []).filter(n =>  n.is_read);
+
+    // Zähler aktualisieren
+    if (unread.length > 0) {
+        countUnread.textContent = unread.length;
+        countUnread.classList.remove('d-none');
+    } else {
+        countUnread.classList.add('d-none');
+    }
+    countArchive.textContent = archive.length;
+
+    // Hilfsfunktion: Eine Karte rendern
+    function renderCard(n) {
+        let fd = 'Unbekannt';
+        try {
+            const d = new Date(n.created_at);
+            fd = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} Uhr`;
+        } catch(e) {}
+
+        const typeIcon = n.type === 'danger'
+            ? '<i class="bi bi-trash-fill" style="color:#ef233c;"></i>'
+            : n.type === 'success'
+            ? '<i class="bi bi-check-circle-fill" style="color:#4ade80;"></i>'
+            : '<i class="bi bi-pencil-fill" style="color:var(--brand-gold-glow);"></i>';
+
+        return `
+        <div class="notif-card ${n.is_read ? 'notif-read' : 'notif-unread'}" data-type="${n.type}">
+            <div class="notif-header">
+                <div class="notif-title-row">
+                    ${typeIcon}
+                    <span class="notif-message">${n.message}</span>
+                    ${!n.is_read ? '<span class="notif-new-badge">NEU</span>' : ''}
+                </div>
+                <span class="notif-time">${fd}</span>
+            </div>
+            <div class="notif-reason-box">
+                <span class="notif-reason-label"><i class="bi bi-chat-quote-fill me-1"></i>Begründung</span>
+                <p class="notif-reason-text">${n.reason}</p>
+            </div>
+            <div class="notif-footer">
+                <span class="notif-from"><i class="bi bi-shield-fill-check me-1" style="color:var(--brand-purple-glow);"></i>Von <b>${n.created_by || 'Team'}</b></span>
+                ${!n.is_read
+                    ? `<button class="notif-read-btn" onclick="markNotificationRead('${n.id}')"><i class="bi bi-check2 me-1"></i>Als gelesen markieren</button>`
+                    : '<span class="notif-done"><i class="bi bi-check2-all me-1"></i>Gelesen</span>'
+                }
+            </div>
+        </div>`;
+    }
+
+    // Tab: Ungelesen
+    panelUnread.innerHTML = unread.length > 0
+        ? unread.map(renderCard).join('')
+        : `<div class="text-center py-5">
+               <i class="bi bi-bell-slash" style="font-size:3rem; color: rgba(157,78,221,0.35);"></i>
+               <p class="text-purple-glow mt-3 mb-0 fw-bold">Keine neuen Benachrichtigungen</p>
+               <p class="text-muted small mt-1">Du bist auf dem neuesten Stand.</p>
+           </div>`;
+
+    // Tab: Archiv
+    panelArchive.innerHTML = archive.length > 0
+        ? `<p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Gelesene Benachrichtigungen werden nach <b>30 Tagen</b> automatisch gelöscht.</p>`
+          + archive.map(renderCard).join('')
+        : `<div class="text-center py-5">
+               <i class="bi bi-archive" style="font-size:3rem; color: rgba(255,255,255,0.1);"></i>
+               <p class="text-muted mt-3 mb-0">Das Archiv ist leer.</p>
+           </div>`;
+
+    // Alle ungelesenen als gesehen markieren (Zähler in Navbar)
+    if (unread.length > 0) {
+        const ids = unread.map(n => n.id);
+        await db.from('user_notifications').update({ is_read: true }).in('id', ids);
+        const badge = document.getElementById('userBellBadge');
+        if (badge) badge.classList.add('d-none');
+    }
+
+    // Standard: Ungelesen-Tab aktiv
+    switchNotifTab('unread');
+    showModal('userNotificationsModal');
+}
+
+async function markNotificationRead(notifId) {
+    await db.from('user_notifications').update({ is_read: true }).eq('id', notifId);
+    openUserNotificationsModal();
 }

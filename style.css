@@ -481,8 +481,188 @@ footer {
 }
 
 /* =========================================
-   PIXEL GARAGE & NEUE MODULE
+   PIXEL GARAGE – PREMIUM CARD V2
    ========================================= */
+.garage-card-v2 {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #0a0a0d;
+    border: 1px solid rgba(157, 78, 221, 0.2);
+    transition: transform 0.3s cubic-bezier(.25,.8,.25,1), box-shadow 0.3s ease, border-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.garage-card-v2:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 20px 45px rgba(0,0,0,0.5), 0 0 25px rgba(197, 160, 26, 0.2);
+    border-color: rgba(197, 160, 26, 0.5);
+}
+
+.garage-card-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 230px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.garage-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.garage-card-v2:hover .garage-card-img {
+    transform: scale(1.06);
+}
+
+.garage-card-img-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 20, 26, 0.8);
+    color: rgba(157, 78, 221, 0.4);
+    font-size: 3rem;
+}
+
+.garage-card-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 30%,
+        rgba(0,0,0,0.75) 100%
+    );
+    pointer-events: none;
+}
+
+.garage-img-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--brand-gold);
+    color: var(--brand-gold-glow);
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 30px;
+    backdrop-filter: blur(4px);
+}
+
+.garage-card-owner-chip {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(123, 44, 191, 0.85);
+    backdrop-filter: blur(6px);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 30px;
+    border: 1px solid rgba(157, 78, 221, 0.5);
+}
+
+.garage-card-body {
+    padding: 16px 18px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.garage-card-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--brand-gold-glow);
+    letter-spacing: 0.5px;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.garage-card-mods {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.6);
+    margin: 0;
+    flex: 1;
+    line-height: 1.4;
+}
+
+.garage-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.garage-card-click-hint {
+    font-size: 0.8rem;
+    color: var(--brand-purple-glow);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.garage-card-v2:hover .garage-card-click-hint {
+    opacity: 1;
+}
+
+/* Action Buttons */
+.garage-card-actions {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid rgba(157, 78, 221, 0.15);
+}
+
+.garage-action-btn {
+    flex: 1;
+    padding: 10px 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.garage-action-btn.edit {
+    background: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border-right: 1px solid rgba(157, 78, 221, 0.15);
+}
+.garage-action-btn.edit:hover { background: rgba(255, 193, 7, 0.25); }
+
+.garage-action-btn.delete {
+    background: rgba(220, 53, 69, 0.1);
+    color: #ef233c;
+}
+.garage-action-btn.delete:hover { background: rgba(220, 53, 69, 0.25); }
+
+.garage-action-btn.mod-edit {
+    background: rgba(255, 165, 0, 0.1);
+    color: #fd7e14;
+    border-right: 1px solid rgba(157, 78, 221, 0.15);
+}
+.garage-action-btn.mod-edit:hover { background: rgba(255, 165, 0, 0.25); }
+
+.garage-action-btn.mod-delete {
+    background: rgba(108, 17, 17, 0.2);
+    color: #ff6b6b;
+}
+.garage-action-btn.mod-delete:hover { background: rgba(220, 53, 69, 0.3); }
+
+/* Legacy .garage-card still needed for hover ref */
 .garage-card {
     background: rgba(10, 10, 12, 0.75);
     backdrop-filter: blur(10px);
@@ -492,16 +672,10 @@ footer {
     transition: all 0.3s ease;
     cursor: pointer;
 }
-
 .garage-card:hover {
     border-color: var(--brand-gold);
     transform: translateY(-5px);
     box-shadow: 0 15px 30px rgba(197, 160, 26, 0.2);
-}
-
-.bg-purple-glow {
-    background-color: var(--brand-purple);
-    color: white;
 }
 
 .custom-switch:checked {
@@ -550,4 +724,274 @@ footer {
 .biker-helmet-btn.participating .helmet-icon {
     animation: rainbowGlow 3s infinite linear;
     color: #e5b823 !important;
+}
+
+/* =========================================
+   THUMBNAIL VORSCHAU (BEARBEITEN-MODAL)
+   ========================================= */
+.thumb-preview-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(197, 160, 26, 0.35);
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.thumb-preview-item:hover {
+    transform: scale(1.05);
+}
+
+.thumb-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumb-del-btn {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(220, 53, 69, 0.85);
+    color: white;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: background 0.2s;
+}
+
+.thumb-del-btn:hover {
+    background: rgba(220, 53, 69, 1);
+}
+
+/* =========================================
+   BENACHRICHTIGUNGS-TABS
+   ========================================= */
+.notif-tabs {
+    display: flex;
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 4px;
+    border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+}
+
+.notif-tab-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.45);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 16px 12px;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: -1px;
+}
+
+.notif-tab-btn:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.notif-tab-btn.active {
+    color: var(--brand-gold-glow);
+    border-bottom-color: var(--brand-gold);
+}
+
+.notif-tab-count {
+    background: rgba(197, 160, 26, 0.25);
+    color: var(--brand-gold-glow);
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 1px 7px;
+    border-radius: 20px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* =========================================
+   USER BENACHRICHTIGUNGEN – REDESIGN
+   ========================================= */
+.notif-card {
+    border-radius: 14px;
+    padding: 18px 20px 18px 24px;
+    margin-bottom: 12px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Farbiger linker Balken je nach Typ */
+.notif-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 14px 0 0 14px;
+}
+
+.notif-card[data-type="warning"]::before { background: var(--brand-gold); }
+.notif-card[data-type="danger"]::before  { background: #ef233c; }
+.notif-card[data-type="success"]::before { background: #4ade80; }
+
+/* Ungelesen: lila Hintergrund-Highlight */
+.notif-unread {
+    background: rgba(123, 44, 191, 0.12);
+    border-color: rgba(157, 78, 221, 0.25);
+    box-shadow: 0 4px 20px rgba(123, 44, 191, 0.15);
+}
+
+/* Gelesen: dezenter dunkler Hintergrund */
+.notif-read {
+    background: rgba(10, 10, 14, 0.65);
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+/* Header: Titel + Zeitstempel nebeneinander */
+.notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.notif-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #ffffff;
+}
+
+.notif-title-row i {
+    margin-top: 3px;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.notif-message {
+    flex: 1;
+}
+
+/* NEU-Badge */
+.notif-new-badge {
+    flex-shrink: 0;
+    background: #ef233c;
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 3px;
+    text-transform: uppercase;
+}
+
+/* Zeitstempel */
+.notif-time {
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.4);
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-top: 3px;
+}
+
+/* Begründungs-Box */
+.notif-reason-box {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(197, 160, 26, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+.notif-reason-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--brand-gold-glow);
+    margin-bottom: 6px;
+}
+
+.notif-reason-text {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+/* Footer: Von + Button */
+.notif-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notif-from {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.notif-from b {
+    color: var(--brand-purple-glow);
+    font-weight: 700;
+}
+
+/* "Als gelesen markieren"-Button */
+.notif-read-btn {
+    background: rgba(157, 78, 221, 0.12);
+    border: 1px solid rgba(157, 78, 221, 0.4);
+    color: var(--brand-purple-glow);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.notif-read-btn:hover {
+    background: rgba(157, 78, 221, 0.28);
+    border-color: var(--brand-purple-glow);
+    color: white;
+}
+
+/* "Gelesen"-Status */
+.notif-done {
+    font-size: 0.8rem;
+    color: rgba(74, 222, 128, 0.65);
+    font-weight: 600;
+}
+
+.notif-card:last-child {
+    margin-bottom: 0;
 }
