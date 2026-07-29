@@ -457,18 +457,6 @@ body {
     gap: 6px;
 }
 
-.btn-event-participate {
-    background-color: var(--brand-purple);
-    color: white;
-    border: none;
-    border-radius: 30px;
-    font-weight: 700;
-    text-transform: uppercase;
-    padding: 8px 18px;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-}
-
 .landing-nav-tabs .nav-link, .admin-nav-tabs .nav-link {
     color: var(--text-white);
     font-weight: 700;
@@ -490,4 +478,76 @@ footer {
     background-color: #030304;
     text-align: center;
     margin-top: auto;
+}
+
+/* =========================================
+   PIXEL GARAGE & NEUE MODULE
+   ========================================= */
+.garage-card {
+    background: rgba(10, 10, 12, 0.75);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(157, 78, 221, 0.25);
+    border-radius: 20px;
+    padding: 24px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.garage-card:hover {
+    border-color: var(--brand-gold);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(197, 160, 26, 0.2);
+}
+
+.bg-purple-glow {
+    background-color: var(--brand-purple);
+    color: white;
+}
+
+.custom-switch:checked {
+    background-color: var(--brand-gold);
+    border-color: var(--brand-gold);
+}
+
+/* =========================================
+   HELM-ANIMATION FÜR EVENTS (KORRIGIERT & SICHTBAR)
+   ========================================= */
+.biker-helmet-btn {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(157, 78, 221, 0.4) !important;
+    color: var(--text-white) !important;
+    padding: 8px 16px !important;
+    border-radius: 30px !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+}
+
+.biker-helmet-btn:hover {
+    background: rgba(157, 78, 221, 0.25) !important;
+    border-color: var(--brand-gold) !important;
+    transform: translateY(-2px);
+    color: var(--text-white) !important;
+}
+
+@keyframes rainbowGlow {
+    0% { filter: hue-rotate(0deg) drop-shadow(0 0 3px rgba(255,255,255,0.6)); }
+    50% { filter: hue-rotate(180deg) drop-shadow(0 0 10px rgba(157,78,221,0.9)); }
+    100% { filter: hue-rotate(360deg) drop-shadow(0 0 3px rgba(255,255,255,0.6)); }
+}
+
+.biker-helmet-btn.participating {
+    background: rgba(25, 135, 84, 0.25) !important;
+    border-color: #198754 !important;
+    color: #4ade80 !important;
+}
+
+.biker-helmet-btn.participating .helmet-icon {
+    animation: rainbowGlow 3s infinite linear;
+    color: #e5b823 !important;
 }

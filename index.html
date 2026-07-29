@@ -11,13 +11,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Leaflet.js CSS (Karte) -->
+    <!-- Leaflet.js CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Deine eigene CSS Datei -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Supabase Client JS (Echte Cloud Datenbank) -->
+    <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -70,32 +67,39 @@
             <h2 class="text-center text-uppercase fw-bold mb-5">Crew-<span>Mitgliederbereich</span></h2>
             
             <div class="row g-4 justify-content-center" id="dashboardGrid">
-                <div class="col-md-6 col-lg-3" onclick="switchView('gpx')">
+                <div class="col-md-6 col-lg-4" onclick="switchView('gpx')">
                     <div class="feature-card">
                         <i class="bi bi-map-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">GPX-Ausfahrten</h4>
                         <p class="card-description">Routen entdecken und Tagestouren mit der Crew teilen.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3" onclick="switchView('forum')">
+                <div class="col-md-6 col-lg-4" onclick="switchView('forum')">
                     <div class="feature-card">
                         <i class="bi bi-chat-quote-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Wissensaustausch</h4>
                         <p class="card-description">Technische Fragen, Schrauber-Hilfe und Tourentipps im Forum.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3" onclick="switchView('events')">
+                <div class="col-md-6 col-lg-4" onclick="switchView('events')">
                     <div class="feature-card">
                         <i class="bi bi-calendar-event-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Exklusive Events</h4>
                         <p class="card-description">Plane Ausfahrten und trage dich in Teilnehmerlisten ein.</p>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-3" onclick="switchView('map')">
+                <div class="col-md-6 col-lg-4" onclick="switchView('map')">
                     <div class="feature-card">
                         <i class="bi bi-geo-alt-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">PixelMap</h4>
                         <p class="card-description">Finde andere Pixel Rider in deiner Region.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4" onclick="switchView('garage')">
+                    <div class="feature-card">
+                        <i class="bi bi-tools feature-icon"></i>
+                        <h4 class="text-white text-uppercase fw-bold">Pixel Garage</h4>
+                        <p class="card-description">Zeige dein Bike und entdecke die Umbauten der Crew.</p>
                     </div>
                 </div>
             </div>
@@ -109,6 +113,18 @@
                     <button class="btn btn-custom-sub" data-bs-toggle="modal" data-bs-target="#uploadGpxModal"><i class="bi bi-cloud-upload-fill me-1"></i> GPX Tour hochladen</button>
                 </div>
                 <div class="row g-4 text-start" id="gpxGrid"></div>
+                <div class="text-center mt-5"><button class="btn btn-outline-light rounded-pill px-4" onclick="switchView('dashboard')">Zurück zum Dashboard</button></div>
+            </div>
+        </section>
+
+        <!-- VIEW: PIXEL GARAGE (NEU) -->
+        <section id="view-garage" class="app-view">
+            <div class="content-card">
+                <h2 class="text-center text-uppercase fw-bold mb-4 text-warning"><i class="bi bi-tools me-2"></i>Die Pixel Garage</h2>
+                <div class="text-center mb-4">
+                    <button class="btn btn-custom-sub" data-bs-toggle="modal" data-bs-target="#createBikeModal"><i class="bi bi-plus-circle-fill me-1"></i> Mein Bike in den Showroom stellen</button>
+                </div>
+                <div class="row g-4 text-start" id="garageGrid"></div>
                 <div class="text-center mt-5"><button class="btn btn-outline-light rounded-pill px-4" onclick="switchView('dashboard')">Zurück zum Dashboard</button></div>
             </div>
         </section>
@@ -185,12 +201,13 @@
                             <h5 class="text-uppercase text-warning fw-bold mb-3">Mein Standort</h5>
                             <form id="mapForm">
                                 <div class="mb-3">
-                                    <label class="label-custom">Wohnort / Stadt *</label>
-                                    <input type="text" class="input-custom" id="mapCity" required placeholder="z. B. Karlsruhe">
+                                    <label class="label-custom">PLZ & Wohnort / Stadt *</label>
+                                    <div class="d-flex gap-2">
+                                        <input type="text" class="input-custom w-25" id="mapZip" required placeholder="PLZ">
+                                        <input type="text" class="input-custom w-75" id="mapCity" required placeholder="z. B. Karlsruhe">
+                                    </div>
                                 </div>
-                                <div class="mb-3" id="bikeInputsContainer">
-                                    <!-- Inputs werden dynamisch durch JS geladen -->
-                                </div>
+                                <div class="mb-3" id="bikeInputsContainer"></div>
                                 <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-3 text-white" id="addBikeBtn" onclick="addBikeInput()">+ Weiteres Bike hinzufügen</button>
                                 <button type="submit" class="btn-custom-sub w-100" id="mapSubmitBtn"><i class="bi bi-geo-alt-fill"></i> Pin Speichern</button>
                             </form>
@@ -202,7 +219,19 @@
                                 <label class="label-custom">Radius: <span id="radiusValue" class="text-white">50</span> km</label>
                                 <input type="range" class="form-range" id="radiusSlider" min="10" max="100" step="10" value="50" oninput="document.getElementById('radiusValue').innerText = this.value">
                             </div>
-                            <button class="btn btn-outline-warning w-100 rounded-pill fw-bold" onclick="filterMapByRadius()"><i class="bi bi-search"></i> Suchen</button>
+                            <button class="btn btn-outline-warning w-100 rounded-pill fw-bold mb-4" onclick="filterMapByRadius()"><i class="bi bi-search"></i> Suchen</button>
+
+                            <!-- NEU: POI LAYER -->
+                            <hr class="border-secondary my-4">
+                            <h5 class="text-uppercase text-warning fw-bold mb-3">Entdecken (POIs)</h5>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input custom-switch" type="checkbox" id="poiTreff" onchange="toggleMapPOIs()">
+                                <label class="form-check-label text-light" for="poiTreff">Bikertreffs & Cafés (Grün)</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input custom-switch" type="checkbox" id="poiPass" onchange="toggleMapPOIs()">
+                                <label class="form-check-label text-light" for="poiPass">Top-Pässe & Kurven (Gold)</label>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-8">
@@ -214,7 +243,7 @@
         </section>
     </main>
 
-    <!-- MODAL: LOGIN / REGISTRIEREN -->
+    <!-- MODAL 1: LOGIN / REGISTRIEREN -->
     <div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white border border-purple rounded-4" style="background: rgba(9, 9, 11, 0.98) !important;">
@@ -228,7 +257,6 @@
                         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#modal-register" type="button">Registrieren</button></li>
                     </ul>
                     <div class="tab-content">
-                        
                         <!-- LOGIN -->
                         <div class="tab-pane fade show active" id="modal-login">
                             <form id="modalLoginForm">
@@ -238,7 +266,6 @@
                                     <a href="#" class="text-purple-glow small text-decoration-none fw-bold" onclick="hideModal('authModal'); showModal('forgotPasswordModal')">Passwort vergessen?</a>
                                 </div>
                                 <button type="submit" class="btn btn-custom-sub w-100 py-2">Einloggen</button>
-                                
                                 <div class="p-3 rounded-3 mt-4 text-center border border-secondary" style="background: rgba(10, 10, 12, 0.6);">
                                     <p class="text-light small mb-2">Noch kein Mitglied der Crew?</p>
                                     <button type="button" class="btn btn-outline-warning w-100 py-2 fw-bold shadow" onclick="document.querySelector('[data-bs-target=\'#modal-register\']').click()">
@@ -247,15 +274,12 @@
                                 </div>
                             </form>
                         </div>
-                        
                         <!-- REGISTER -->
                         <div class="tab-pane fade" id="modal-register">
                             <form id="modalRegisterForm">
                                 <div class="mb-3"><label class="label-custom">Username *</label><input type="text" id="modalRegUser" class="input-custom" required></div>
                                 <div class="mb-3"><label class="label-custom">E-Mail *</label><input type="email" id="modalRegEmail" class="input-custom" required></div>
                                 <div class="mb-3"><label class="label-custom">Passwort *</label><input type="password" id="modalRegPass" class="input-custom" required minlength="6"></div>
-                                
-                                <!-- STATE 1: Auswahl (Sichtbar) -->
                                 <div id="inviteChoiceButtons" class="mt-4 text-center">
                                     <label class="label-custom mb-3 text-warning">Hast du bereits einen Invite-Code?</label>
                                     <div class="d-flex flex-column flex-sm-row gap-2">
@@ -267,8 +291,6 @@
                                         </button>
                                     </div>
                                 </div>
-
-                                <!-- STATE 2: Eingabe (Versteckt bis Klick) -->
                                 <div id="inviteInputSection" class="mt-4 d-none">
                                     <label class="label-custom d-flex align-items-center mb-2">
                                         Dein Invite-Code
@@ -276,17 +298,10 @@
                                     </label>
                                     <input type="text" id="modalRegInvite" class="input-custom text-uppercase mb-3" placeholder="Z.B. RIDER-ABC12">
                                     <div id="inviteHelpText" class="small text-light mb-3 d-none p-3 rounded border border-secondary" style="background: rgba(10, 10, 12, 0.8);"></div>
-                                    
                                     <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-lg mb-2">Konto erstellen</button>
-                                    
-                                    <!-- Zurück / Stattdessen anfordern -->
                                     <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-outline-light flex-grow-1 py-2 fw-bold small" onclick="hideInviteInput()">
-                                            <i class="bi bi-arrow-left me-1"></i> Zurück
-                                        </button>
-                                        <button type="button" class="btn btn-outline-warning flex-grow-1 py-2 fw-bold small" onclick="requestInviteWithoutCode()">
-                                            Stattdessen anfordern
-                                        </button>
+                                        <button type="button" class="btn btn-outline-light flex-grow-1 py-2 fw-bold small" onclick="hideInviteInput()"><i class="bi bi-arrow-left me-1"></i> Zurück</button>
+                                        <button type="button" class="btn btn-outline-warning flex-grow-1 py-2 fw-bold small" onclick="requestInviteWithoutCode()">Stattdessen anfordern</button>
                                     </div>
                                 </div>
                             </form>
@@ -297,19 +312,19 @@
         </div>
     </div>
 
-    <!-- MODAL: ERFOLGREICHE ANFRAGE BESTÄTIGUNG -->
+    <!-- MODAL 2: ERFOLGREICHE ANFRAGE -->
     <div class="modal fade" id="successRequestInviteModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-success rounded-4 text-center" style="background: rgba(9, 9, 11, 0.99) !important;">
                 <i class="bi bi-check-circle-fill text-success mb-2" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(25, 135, 84, 0.5);"></i>
                 <h4 class="text-success fw-bold text-uppercase mt-2">Zwischengespeichert!</h4>
-                <p class="mb-4 mt-3 text-light">Deine Daten wurden erfolgreich hinterlegt. Sobald ein Admin oder Moderator deinen Account freigibt, kannst du dich mit deinen Zugangsdaten direkt einloggen!</p>
+                <p class="mb-4 mt-3 text-light">Deine Daten wurden hinterlegt. Ein Admin wird deinen Account freigeben.</p>
                 <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-lg w-100" data-bs-dismiss="modal">Verstanden</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: PASSWORT VERGESSEN ANFRAGE -->
+    <!-- MODAL 3: PASSWORT VERGESSEN -->
     <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white border border-purple rounded-4 p-4" style="background: rgba(9, 9, 11, 0.98) !important;">
@@ -317,31 +332,30 @@
                     <h5 class="text-warning fw-bold text-uppercase mb-0">Passwort zurücksetzen</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <p class="text-light small mb-4">Gib deinen Usernamen ein. Ein Admin wird benachrichtigt und setzt dein Passwort in Kürze auf "1234" zurück.</p>
                 <form id="forgotPasswordForm">
                     <div class="mb-4"><label class="label-custom">Username</label><input type="text" id="forgotPassUser" class="input-custom" required></div>
                     <button type="submit" class="btn btn-custom-sub w-100">Reset anfordern</button>
                 </form>
                 <div class="text-center mt-4">
-                    <button class="btn btn-sm btn-outline-light rounded-pill" onclick="hideModal('forgotPasswordModal'); showModal('authModal');" type="button"><i class="bi bi-arrow-left"></i> Zurück zum Login</button>
+                    <button class="btn btn-sm btn-outline-light rounded-pill" onclick="hideModal('forgotPasswordModal'); showModal('authModal');" type="button"><i class="bi bi-arrow-left"></i> Zurück</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: ERFOLGREICHE RESET ANFRAGE (USER) -->
+    <!-- MODAL 4: ERFOLGREICHE RESET ANFRAGE -->
     <div class="modal fade" id="successRequestUserModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-success rounded-4 text-center">
                 <i class="bi bi-check-circle-fill text-success mb-2" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(25, 135, 84, 0.5);"></i>
                 <h4 class="text-success fw-bold text-uppercase mt-2">Anfrage gesendet!</h4>
-                <p class="mb-4 mt-3">Ein Admin wurde benachrichtigt. Dein Passwort wird in Kürze zurückgesetzt. Versuche dich später mit dem Passwort <b class="text-warning">1234</b> einzuloggen.</p>
+                <p class="mb-4 mt-3">Ein Admin wurde benachrichtigt.</p>
                 <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-lg w-100" data-bs-dismiss="modal">Verstanden</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: ADMIN BENACHRICHTIGUNGEN (PASSWORT & INVITE ANFRAGEN) -->
+    <!-- MODAL 5: ADMIN BENACHRICHTIGUNGEN -->
     <div class="modal fade" id="passwordResetsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4">
@@ -349,22 +363,19 @@
                     <h5 class="text-warning fw-bold text-uppercase mb-0"><i class="bi bi-bell-fill me-2 text-danger"></i>Admin Benachrichtigungen</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <p class="text-light small mb-3">Offene Anfragen von Mitgliedern:</p>
-                <div id="passwordResetsList" class="vstack gap-3 text-start">
-                    <!-- Wird dynamisch gefüllt -->
-                </div>
+                <div id="passwordResetsList" class="vstack gap-3 text-start"></div>
                 <div class="text-center mt-4">
-                    <button class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Schließen & zum Dashboard</button>
+                    <button class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Schließen</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: RESET BESTÄTIGEN (ADMIN SICHERHEITSABFRAGE) -->
+    <!-- MODAL 6: RESET BESTÄTIGEN (ADMIN) -->
     <div class="modal fade" id="confirmResetModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4 text-center">
-                <i class="bi bi-key-fill text-warning mb-2" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(255, 193, 7, 0.5);"></i>
+                <i class="bi bi-key-fill text-warning mb-2" style="font-size: 3.5rem;"></i>
                 <h4 class="text-warning fw-bold text-uppercase mt-2">Passwort zurücksetzen?</h4>
                 <p class="mb-4 mt-3" id="confirmResetText"></p>
                 <div class="d-flex gap-3 justify-content-center">
@@ -375,76 +386,76 @@
         </div>
     </div>
 
-    <!-- MODAL: ERFOLGREICH ZURÜCKGESETZT (ADMIN) -->
+    <!-- MODAL 7: ERFOLGREICH ZURÜCKGESETZT -->
     <div class="modal fade" id="successResetAdminModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-success rounded-4 text-center">
-                <i class="bi bi-check-circle-fill text-success mb-2" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(25, 135, 84, 0.5);"></i>
-                <h4 class="text-success fw-bold text-uppercase mt-2">Passwort zurückgesetzt</h4>
+                <i class="bi bi-check-circle-fill text-success mb-2" style="font-size: 3.5rem;"></i>
+                <h4 class="text-success fw-bold text-uppercase mt-2">Zurückgesetzt</h4>
                 <p class="mb-4 mt-3" id="successResetAdminText"></p>
                 <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-lg w-100" data-bs-dismiss="modal">Okay</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: GPX TOUR HOCHLADEN -->
+    <!-- MODAL 8: GPX UPLOAD -->
     <div class="modal fade" id="uploadGpxModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-purple rounded-4">
                 <form id="gpxUploadForm">
                     <h5 class="text-warning fw-bold mb-3">GPX-Ausfahrt Hochladen</h5>
                     <div class="mb-3"><input type="text" class="input-custom" id="gpxTitle" placeholder="Titel der Tour *" required></div>
-                    <div class="mb-3"><input type="number" step="0.1" class="input-custom" id="gpxDistance" placeholder="Ungefähre Streckenlänge in km *" required></div>
+                    <div class="mb-3"><input type="number" step="0.1" class="input-custom" id="gpxDistance" placeholder="Länge in km *" required></div>
                     <div class="mb-4">
                         <label class="label-custom">GPX-Datei (*.gpx) *</label>
                         <input type="file" class="input-custom" id="gpxFileInput" accept=".gpx" required>
                     </div>
-                    <button type="submit" class="btn btn-custom-sub w-100">Tour Veröffentlichen</button>
+                    <button type="submit" class="btn btn-custom-sub w-100">Veröffentlichen</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: GPX TOUR BEARBEITEN -->
+    <!-- MODAL 9: GPX BEARBEITEN -->
     <div class="modal fade" id="editGpxModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4">
                 <form id="editGpxForm">
                     <h5 class="text-warning fw-bold mb-3">GPX-Tour bearbeiten</h5>
                     <div class="mb-3"><input type="text" class="input-custom" id="editGpxTitle" placeholder="Titel der Tour *" required></div>
-                    <div class="mb-3"><input type="number" step="0.1" class="input-custom" id="editGpxDistance" placeholder="Streckenlänge in km *" required></div>
+                    <div class="mb-3"><input type="number" step="0.1" class="input-custom" id="editGpxDistance" placeholder="Länge in km *" required></div>
                     <div class="mb-4">
-                        <label class="label-custom">Neue GPX-Datei (Optional - lässt alte Route bestehen falls leer)</label>
+                        <label class="label-custom">Neue GPX-Datei (Optional)</label>
                         <input type="file" class="input-custom" id="editGpxFileInput" accept=".gpx">
                     </div>
-                    <button type="submit" class="btn btn-warning w-100 fw-bold">Änderungen Speichern</button>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Speichern</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: GPX TOUR VORSCHAU -->
+    <!-- MODAL 10: GPX VORSCHAU -->
     <div class="modal fade" id="gpxPreviewModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="text-warning fw-bold text-uppercase mb-0" id="gpxModalTitle">Tour Vorschau</h5>
+                    <h5 class="text-warning fw-bold text-uppercase mb-0" id="gpxModalTitle">Vorschau</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="row g-2 mb-3">
                     <div class="col-md-4"><p class="text-light mb-0"><b>Ersteller:</b> <span id="gpxModalCreator" class="text-warning"></span></p></div>
-                    <div class="col-md-4"><p class="text-light mb-0"><b>Streckenlänge:</b> <span id="gpxModalDistance" class="text-warning"></span> km</p></div>
-                    <div class="col-md-4"><p class="text-light mb-0"><i class="bi bi-geo-alt-fill text-danger"></i> <span id="gpxModalUserDistance" class="text-purple-glow fw-bold">Berechne Entfernung...</span></p></div>
+                    <div class="col-md-4"><p class="text-light mb-0"><b>Strecke:</b> <span id="gpxModalDistance" class="text-warning"></span> km</p></div>
+                    <div class="col-md-4"><p class="text-light mb-0"><i class="bi bi-geo-alt-fill text-danger"></i> <span id="gpxModalUserDistance" class="text-purple-glow fw-bold"></span></p></div>
                 </div>
                 <div id="gpxPreviewMap" style="height: 320px; width: 100%; border-radius: 14px; border: 2px solid var(--brand-purple);" class="mb-3"></div>
                 <div class="text-center">
-                    <button class="btn btn-custom-sub px-4" onclick="downloadCurrentGpx()"><i class="bi bi-download me-2"></i> GPX-Datei herunterladen</button>
+                    <button class="btn btn-custom-sub px-4" onclick="downloadCurrentGpx()"><i class="bi bi-download me-2"></i> Herunterladen</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: NEUES THEMA (Forum) -->
+    <!-- MODAL 11: NEUES THEMA -->
     <div class="modal fade" id="createTopicModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-purple rounded-4">
@@ -465,7 +476,7 @@
         </div>
     </div>
 
-    <!-- MODAL: THEMA BEARBEITEN -->
+    <!-- MODAL 12: THEMA BEARBEITEN -->
     <div class="modal fade" id="editTopicModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4">
@@ -480,13 +491,13 @@
                     </div>
                     <div class="mb-3"><input type="text" class="input-custom" id="editTopicTitle" placeholder="Titel / Frage" required></div>
                     <div class="mb-3"><textarea class="input-custom" id="editTopicContent" rows="3" placeholder="Beitrag..." required></textarea></div>
-                    <button type="submit" class="btn btn-warning w-100 fw-bold">Änderungen Speichern</button>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Speichern</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: CHAT (Forum Antworten) -->
+    <!-- MODAL 13: FORUM CHAT -->
     <div class="modal fade" id="chatTopicModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content chat-modal-content text-white p-3">
@@ -505,96 +516,86 @@
         </div>
     </div>
 
-    <!-- MODAL: PASSWORT ÄNDERN -->
+    <!-- MODAL 14: PASSWORT ÄNDERN -->
     <div class="modal fade" id="changePasswordModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border border-warning rounded-4 p-4" style="background: rgba(9, 9, 11, 0.99) !important;">
+            <div class="modal-content bg-dark text-white border border-warning rounded-4 p-4">
                 <h5 class="text-warning fw-bold text-uppercase mb-3">Sicherheits-Update</h5>
-                <p class="text-purple-glow small mb-3">Bitte ändere jetzt dein Standard-Passwort.</p>
                 <form id="changePasswordForm">
                     <div class="mb-3"><label class="label-custom">Neues Passwort *</label><input type="password" id="newPassInput" class="input-custom" required minlength="6"></div>
-                    <button type="submit" class="btn btn-custom-sub w-100">Passwort Speichern</button>
+                    <button type="submit" class="btn btn-custom-sub w-100">Speichern</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: PIN FEHLT -->
+    <!-- MODAL 15: PIN FEHLT -->
     <div class="modal fade" id="missingPinModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4 text-center">
                 <i class="bi bi-geo-alt-fill text-warning mb-2" style="font-size: 3.5rem;"></i>
                 <h4 class="text-warning fw-bold text-uppercase mt-2">Dein Pin fehlt!</h4>
-                <p class="mb-4 mt-3">Du hast dich noch nicht auf der PixelMap eingetragen. Setze jetzt deinen Standort und dein(e) Bike(s), um von anderen Ridern aus der Crew gefunden zu werden!</p>
+                <p class="mb-4 mt-3">Trage deinen Standort auf der PixelMap ein, um gefunden zu werden!</p>
                 <button type="button" class="btn btn-custom-sub w-100" data-bs-dismiss="modal">Jetzt eintragen</button>
             </div>
         </div>
     </div>
-    
-    <!-- MODAL: LÖSCHEN BESTÄTIGEN -->
+
+    <!-- MODAL 16: LÖSCHEN BESTÄTIGEN (ADMIN) -->
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-danger rounded-4 text-center">
-                <i class="bi bi-exclamation-octagon-fill text-danger mb-2" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(220,53,69,0.5);"></i>
+                <i class="bi bi-exclamation-octagon-fill text-danger mb-2" style="font-size: 3.5rem;"></i>
                 <h4 class="text-danger fw-bold text-uppercase mt-2">Account löschen?</h4>
                 <p class="mb-4 mt-3" id="confirmDeleteText"></p>
                 <div class="d-flex gap-3 justify-content-center">
                     <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Abbrechen</button>
-                    <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold shadow-lg" onclick="executeDeleteUser()">Ja, endgültig löschen</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold shadow-lg" onclick="executeDeleteUser()">Löschen</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: EVENT PLANEN -->
+    <!-- MODAL 17: EVENT PLANEN -->
     <div class="modal fade" id="createEventModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-purple rounded-4">
                 <form id="eventForm">
                     <h5 class="text-warning fw-bold mb-3">Event planen</h5>
                     <div class="mb-3"><input type="text" class="input-custom" id="eventTitle" placeholder="Event Titel" required></div>
-                    <div class="mb-3"><input type="text" class="input-custom" id="eventOrganizer" placeholder="Organisator (Orga)" required></div>
+                    <div class="mb-3"><input type="text" class="input-custom" id="eventOrganizer" placeholder="Organisator" required></div>
                     <div class="mb-3"><input type="datetime-local" class="input-custom" id="eventDateTime" required></div>
                     <div class="mb-3"><input type="text" class="input-custom" id="eventLocation" placeholder="Treffpunkt (Optional)"></div>
-                    <div class="mb-3">
-                        <label class="label-custom">Eventbeschreibung</label>
-                        <textarea class="input-custom" id="eventDescription" rows="3" placeholder="Details zur Ausfahrt, Pausen, Tempo etc..."></textarea>
-                    </div>
+                    <div class="mb-3"><textarea class="input-custom" id="eventDescription" rows="3" placeholder="Details..."></textarea></div>
                     <div class="mb-4">
                         <label class="label-custom">Event Bild (Optional, max. 1 MB)</label>
                         <input type="file" class="input-custom" id="eventImage" accept="image/*">
                     </div>
-                    <button type="submit" class="btn btn-custom-sub w-100">Event Erstellen</button>
+                    <button type="submit" class="btn btn-custom-sub w-100">Erstellen</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: EVENT BEARBEITEN -->
+    <!-- MODAL 18: EVENT BEARBEITEN -->
     <div class="modal fade" id="editEventModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4">
                 <form id="editEventForm">
                     <h5 class="text-warning fw-bold mb-3">Event bearbeiten</h5>
                     <div class="mb-3"><input type="text" class="input-custom" id="editEventTitle" placeholder="Event Titel" required></div>
-                    <div class="mb-3"><input type="text" class="input-custom" id="editEventOrganizer" placeholder="Organisator (Orga)" required></div>
+                    <div class="mb-3"><input type="text" class="input-custom" id="editEventOrganizer" placeholder="Organisator" required></div>
                     <div class="mb-3"><input type="datetime-local" class="input-custom" id="editEventDateTime" required></div>
-                    <div class="mb-3"><input type="text" class="input-custom" id="editEventLocation" placeholder="Treffpunkt (Optional)"></div>
-                    <div class="mb-3">
-                        <label class="label-custom">Eventbeschreibung</label>
-                        <textarea class="input-custom" id="editEventDescription" rows="3" placeholder="Details zur Ausfahrt..."></textarea>
-                    </div>
-                    <div class="mb-4">
-                        <label class="label-custom">Neues Bild (Optional, max. 1 MB - Lässt altes Bild bestehen falls leer)</label>
-                        <input type="file" class="input-custom" id="editEventImage" accept="image/*">
-                    </div>
-                    <button type="submit" class="btn btn-warning w-100 fw-bold">Änderungen Speichern</button>
+                    <div class="mb-3"><input type="text" class="input-custom" id="editEventLocation" placeholder="Treffpunkt"></div>
+                    <div class="mb-3"><textarea class="input-custom" id="editEventDescription" rows="3"></textarea></div>
+                    <div class="mb-4"><input type="file" class="input-custom" id="editEventImage" accept="image/*"></div>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Speichern</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- MODAL: BESTER TREFFPUNKT KARTE -->
+    <!-- MODAL 19: BESTER TREFFPUNKT -->
     <div class="modal fade" id="bestMeetingPointModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4">
@@ -602,21 +603,81 @@
                     <h5 class="text-warning fw-bold text-uppercase mb-0"><i class="bi bi-geo-alt-fill"></i> Bester Treffpunkt</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <p class="text-light mb-2">Die berechnete geographische Mitte aller angemeldeten Teilnehmer liegt ungefähr in:</p>
                 <h3 class="text-purple-glow text-uppercase mb-3" id="meetingPointCityName">Wird berechnet...</h3>
                 <div id="meetingMap" style="height: 350px; width: 100%; border-radius: 18px; border: 2px solid var(--brand-purple);"></div>
-                <p class="small text-muted mt-3 mb-0">* Der markierte Bereich zeigt eine Toleranz von +- 15km an. Einigt euch im Forum auf einen genauen Treffpunkt innerhalb dieser Region.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 20: GARAGE UPLOAD (NEU) -->
+    <div class="modal fade" id="createBikeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white p-4 border border-purple rounded-4">
+                <form id="bikeUploadForm">
+                    <h5 class="text-warning fw-bold mb-3">Bike in Showroom stellen</h5>
+                    <div class="mb-3"><input type="text" class="input-custom" id="garageBikeModel" placeholder="Modell (z.B. Yamaha MT-07)" required></div>
+                    <div class="mb-3">
+                        <label class="label-custom">Mods & Umbauten (Optional)</label>
+                        <textarea class="input-custom" id="garageBikeMods" rows="3" placeholder="Auspuff, Fahrwerk..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="label-custom">Bild (max. 1.5 MB) *</label>
+                        <input type="file" class="input-custom" id="garageBikeImage" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn btn-custom-sub w-100">Ab in den Showroom</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 21: GARAGE VORSCHAU (NEU) -->
+    <div class="modal fade" id="bikePreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="text-warning fw-bold text-uppercase mb-0" id="bikeModalTitle">Modell</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <p class="text-light mb-2"><i class="bi bi-person-badge"></i> Besitzer: <span id="bikeModalOwner" class="text-purple-glow fw-bold"></span></p>
+                <img id="bikeModalImage" src="" class="img-fluid rounded-4 mb-3 w-100" style="max-height: 400px; object-fit: cover;">
+                <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.4); border-left: 3px solid var(--brand-gold);">
+                    <h6 class="text-warning text-uppercase mb-2">Umbauten:</h6>
+                    <p class="text-light small mb-0" id="bikeModalMods" style="white-space: pre-wrap;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 22: DYNAMISCHER ALERT -->
+    <div class="modal fade" id="customAlertModal" tabindex="-1" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-white p-4 rounded-4 text-center border" id="customAlertContent" style="background: rgba(9, 9, 11, 0.98) !important;">
+                <i id="customAlertIcon" class="mb-2" style="font-size: 3.5rem;"></i>
+                <h4 class="fw-bold text-uppercase mt-2" id="customAlertTitle">Hinweis</h4>
+                <p class="mb-4 mt-3 text-light" id="customAlertMessage"></p>
+                <button type="button" id="customAlertBtn" class="btn rounded-pill px-4 fw-bold shadow-lg w-100" data-bs-dismiss="modal">Verstanden</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 23: DYNAMISCHER CONFIRM -->
+    <div class="modal fade" id="customConfirmModal" tabindex="-1" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white p-4 border border-danger rounded-4 text-center" style="background: rgba(9, 9, 11, 0.98) !important;">
+                <i class="bi bi-question-octagon-fill text-danger mb-2" style="font-size: 3.5rem;"></i>
+                <h4 class="text-danger fw-bold text-uppercase mt-2" id="customConfirmTitle">Bitte Bestätigen</h4>
+                <p class="mb-4 mt-3 text-light" id="customConfirmMessage"></p>
+                <div class="d-flex gap-3 justify-content-center">
+                    <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal" id="customConfirmCancel">Abbrechen</button>
+                    <button type="button" class="btn btn-danger rounded-pill px-4 fw-bold shadow-lg" id="customConfirmOk">Ja, fortfahren</button>
+                </div>
             </div>
         </div>
     </div>
 
     <footer><p class="text-purple-glow mb-0 small">&copy; 2026 Pixel Rider. Web-App Version 2.0</p></footer>
-
-    <!-- Bootstrap & Leaflet JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Deine eigene JavaScript Datei -->
     <script src="app.js"></script>
 </body>
 </html>
