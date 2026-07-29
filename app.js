@@ -2491,10 +2491,16 @@ async function openDirectChat(targetUser) {
 async function loadDirectMessages() {
     if (!activeDirectChatUser || !state.currentUser) return;
     
-    let { data: messages } = await db.from('direct_messages')
+    let { data: messages, error } = await db.from('direct_messages')
         .select('*')
         .or('and(sender.eq.' + state.currentUser.username + ',receiver.eq.' + activeDirectChatUser + '),and(sender.eq.' + activeDirectChatUser + ',receiver.eq.' + state.currentUser.username + ')')
         .order('created_at', { ascending: true });
+        
+    if (error) {
+        console.error("Chat Error:", error);
+        document.getElementById("directChatMessageList").innerHTML = '<p class="text-center text-danger mt-4">Datenbank-Fehler: Tabelle existiert nicht. Bitte SQL ausfhren!</p>';
+        return;
+    }
         
     const listEl = document.getElementById("directChatMessageList");
     if (!messages || messages.length === 0) {
@@ -2512,17 +2518,23 @@ async function sendDirectMessage() {
     const text = input.value.trim();
     if (!text || !activeDirectChatUser || !state.currentUser) return;
     
+    const oldText = input.value;
     input.value = "";
-    await db.from('direct_messages').insert([{
+    let { error } = await db.from('direct_messages').insert([{
         sender: state.currentUser.username,
         receiver: activeDirectChatUser,
         message: text
     }]);
     
+    if (error) {
+        input.value = oldText; // Restore text
+        showCustomAlert("Fehler beim Senden. Hast du die Tabelle in Supabase erstellt?", "Systemfehler", "danger");
+        return;
+    }
+    
     loadDirectMessages();
 }
 
-// Ensure subscription is closed when modal is closed
 document.addEventListener("DOMContentLoaded", function() {
     const dcm = document.getElementById('directChatModal');
     if (dcm) {
@@ -2535,5 +2547,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
+
+
 
 
