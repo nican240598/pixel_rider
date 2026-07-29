@@ -474,10 +474,21 @@ body {
 
 footer {
     border-top: 1px solid rgba(157, 78, 221, 0.15);
-    padding: 20px 0;
+    padding: 30px 0 40px;
     background-color: #030304;
     text-align: center;
     margin-top: auto;
+}
+
+.social-icon-link {
+    color: rgba(255, 255, 255, 0.5);
+    transition: all 0.3s ease;
+    font-size: 1.5rem;
+}
+
+.social-icon-link:hover {
+    color: var(--brand-purple-glow);
+    transform: translateY(-3px);
 }
 
 /* =========================================

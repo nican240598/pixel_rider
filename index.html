@@ -38,25 +38,52 @@
             <p class="fs-4 text-warning mb-5">„Alleine nur ein unbedeutender Pixel, zusammen eine einzigartige Community“</p>
 
             <div class="row g-4 justify-content-center mb-5 text-start">
-                <div class="col-md-4">
+                <!-- 1. Zusammenhalt -->
+                <div class="col-md-6 col-lg-4">
                     <div class="feature-card h-100">
                         <i class="bi bi-people-fill feature-icon"></i>
-                        <h4 class="text-white text-uppercase fw-bold">Die Gemeinschaft</h4>
-                        <p class="text-light fs-6">Pixel Rider ist eine eingeschworene Crew aus leidenschaftlichen Motorradfahrern.</p>
+                        <h4 class="text-white text-uppercase fw-bold">Zusammenhalt</h4>
+                        <p class="text-light fs-6">Egal welches Bike in deiner Garage steht – bei uns zählt der Charakter unterm Helm. Wir starten gemeinsam, wir kommen gemeinsam an. Bei Pixel Rider bleibt niemand zurück.</p>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <!-- 2. Schrauber-Hilfe -->
+                <div class="col-md-6 col-lg-4">
                     <div class="feature-card h-100">
-                        <i class="bi bi-signpost-2-fill feature-icon"></i>
-                        <h4 class="text-white text-uppercase fw-bold">Unsere Ausfahrten</h4>
-                        <p class="text-light fs-6">Gemeinsame Tagestouren und Wochenend-Trips.</p>
+                        <i class="bi bi-tools feature-icon"></i>
+                        <h4 class="text-white text-uppercase fw-bold">Schrauber-Hilfe</h4>
+                        <p class="text-light fs-6">Mehr Leidenschaft als Werkzeug? Kein Problem! Unsere erfahrenen Schrauber stehen dir bei jedem Umbau, jeder festen Schraube und jedem technischen Problem mit Rat und Tat zur Seite.</p>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <!-- 3. Wissensaustausch -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card h-100">
+                        <i class="bi bi-chat-quote-fill feature-icon"></i>
+                        <h4 class="text-white text-uppercase fw-bold">Wissensaustausch</h4>
+                        <p class="text-light fs-6">Ob die besten Kurven-Setups, ehrliche Reifenempfehlungen oder versteckte GPX-Routen – wir teilen unser Wissen offen, ehrlich und immer auf Augenhöhe.</p>
+                    </div>
+                </div>
+                <!-- 4. Ride Outs & Events -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card h-100">
+                        <i class="bi bi-calendar-event-fill feature-icon"></i>
+                        <h4 class="text-white text-uppercase fw-bold">Ride Outs & Events</h4>
+                        <p class="text-light fs-6">Der Asphalt ist unser Zuhause. Von der spontanen Feierabendrunde über epische Tagestouren bis hin zu exklusiven Crew-Events – wir leben für den gemeinsamen Ride.</p>
+                    </div>
+                </div>
+                <!-- 5. WhatsApp Community -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card h-100">
+                        <i class="bi bi-whatsapp feature-icon"></i>
+                        <h4 class="text-white text-uppercase fw-bold">WhatsApp Community</h4>
+                        <p class="text-light fs-6">Strukturiert, fokussiert und zu 100 % spamfrei. Unsere Gruppen sind thematisch sauber getrennt – von der Verabredung zur Tour bis hin zum echten Technik-Nerd-Talk.</p>
+                    </div>
+                </div>
+                <!-- 6. Admins & Moderatoren -->
+                <div class="col-md-6 col-lg-4">
                     <div class="feature-card h-100">
                         <i class="bi bi-shield-check feature-icon"></i>
-                        <h4 class="text-white text-uppercase fw-bold">Exklusiver Kreis</h4>
-                        <p class="text-light fs-6">Der Beitritt erfolgt exklusiv über persönliche Invite-Codes.</p>
+                        <h4 class="text-white text-uppercase fw-bold">Admins & Moderatoren</h4>
+                        <p class="text-light fs-6">Aktiv, engagiert und greifbar. Unser starkes Team aus Admins und Moderatoren sorgt für ein respektvolles Miteinander, organisiert alles im Hintergrund und hat stets ein offenes Ohr für dich.</p>
                     </div>
                 </div>
             </div>
@@ -358,14 +385,36 @@
     <!-- MODAL 5: ADMIN BENACHRICHTIGUNGEN -->
     <div class="modal fade" id="passwordResetsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content bg-dark text-white p-4 border border-warning rounded-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="text-warning fw-bold text-uppercase mb-0"><i class="bi bi-bell-fill me-2 text-danger"></i>Admin Benachrichtigungen</h5>
+            <div class="modal-content text-white rounded-4 border-0" style="background: rgba(9,9,11,0.99); border: 1px solid rgba(197,160,26,0.3) !important;">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-3" style="border-bottom: 1px solid rgba(197,160,26,0.2);">
+                    <div>
+                        <h5 class="text-warning fw-bold text-uppercase mb-0"><i class="bi bi-shield-shaded me-2"></i>Admin Dashboard</h5>
+                        <small class="text-muted">Gelesene/Erledigte werden nach 30 Tagen gelöscht</small>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div id="passwordResetsList" class="vstack gap-3 text-start"></div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Schließen</button>
+                <!-- Tabs -->
+                <div class="px-4 pt-3">
+                    <ul class="nav notif-tabs" id="adminNotifTabs">
+                        <li class="nav-item">
+                            <button class="notif-tab-btn active" id="tabAdminUnread" onclick="switchAdminNotifTab('unread')">
+                                <i class="bi bi-inbox me-1"></i>Offen
+                                <span id="adminUnreadCount" class="notif-tab-count d-none"></span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="notif-tab-btn" id="tabAdminArchive" onclick="switchAdminNotifTab('archive')">
+                                <i class="bi bi-archive me-1"></i>Archiv
+                                <span id="adminArchiveCount" class="notif-tab-count" style="background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);"></span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <!-- Tab Content -->
+                <div style="max-height: 60vh; overflow-y: auto; padding: 16px 24px 24px;">
+                    <div id="adminPanelUnread"></div>
+                    <div id="adminPanelArchive" class="d-none"></div>
                 </div>
             </div>
         </div>
@@ -782,7 +831,119 @@
         </div>
     </div>
 
-    <footer><p class="text-purple-glow mb-0 small">&copy; 2026 Pixel Rider. Web-App Version 2.0</p></footer>
+    <main>
+        <!-- VIEW: DATENSCHUTZ -->
+        <section id="view-privacy" class="app-view">
+            <div class="content-card mx-auto" style="max-width: 900px; text-align: left;">
+                <h2 class="text-uppercase fw-bold mb-4 text-warning" style="border-bottom: 1px solid rgba(157,78,221,0.3); padding-bottom: 15px;">Datenschutzerklärung</h2>
+                
+                <div class="privacy-section mb-4">
+                    <h5 class="text-purple-glow fw-bold text-uppercase">1. Datenschutz auf einen Blick</h5>
+                    <p class="text-light small">Die Betreiber dieser Seiten nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend den gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.</p>
+                    <p class="text-light small">Wenn Sie diese Website benutzen, werden verschiedene personenbezogene Daten erhoben. Personenbezogene Daten sind Daten, mit denen Sie persönlich identifiziert werden können. Die vorliegende Datenschutzerklärung erläutert, welche Daten wir erheben und wofür wir sie nutzen. Sie erläutert auch, wie und zu welchem Zweck das geschieht.</p>
+                </div>
+
+                <div class="privacy-section mb-4">
+                    <h5 class="text-purple-glow fw-bold text-uppercase">2. Verantwortlicher für die Datenverarbeitung</h5>
+                    <p class="text-light small">Der Verantwortliche für die Datenverarbeitung auf dieser Website ist:</p>
+                    <p class="text-light small fw-bold mb-0">Nico Anschau</p>
+                    <p class="text-light small mb-0">Ort: Hüffler</p>
+                    <p class="text-light small">Kontakt: nico.anschau1998@gmail.com</p>
+                </div>
+
+                <div class="privacy-section mb-4">
+                    <h5 class="text-purple-glow fw-bold text-uppercase">3. Bereitstellung der Website (Server-Logfiles)</h5>
+                    <p class="text-light small">Der Provider dieser Seiten erhebt und speichert automatisch Informationen in sogenannten Server-Log-Dateien, die Ihr Browser automatisch an uns übermittelt. Dies sind:</p>
+                    <ul class="text-light small">
+                        <li>Browsertyp und Browserversion</li>
+                        <li>Verwendetes Betriebssystem</li>
+                        <li>Referrer URL (die zuvor besuchte Seite)</li>
+                        <li>Hostname des zugreifenden Rechners</li>
+                        <li>Uhrzeit der Serveranfrage</li>
+                        <li>IP-Adresse</li>
+                    </ul>
+                    <p class="text-light small">Eine Zusammenführung dieser Daten mit anderen Datenquellen wird nicht vorgenommen. Die Erfassung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO. Der Websitebetreiber hat ein berechtigtes Interesse an der technisch fehlerfreien Darstellung und der Optimierung seiner Website – hierzu müssen die Server-Logfiles erfasst werden.</p>
+                </div>
+
+                <div class="privacy-section mb-4">
+                    <h5 class="text-purple-glow fw-bold text-uppercase">4. Registrierung, Login & Datenbank (Supabase)</h5>
+                    <p class="text-light small">Für die Bereitstellung unserer Community-Funktionen (Logins, Profile, Speichern von GPX-Routen, Forenbeiträgen etc.) nutzen wir den Dienst <strong>Supabase</strong> (Supabase Inc.).</p>
+                    <p class="text-light small">Wenn Sie sich bei uns registrieren, werden Ihre E-Mail-Adresse, ein sicheres Passwort-Hash und Ihr gewählter Benutzername an die Server von Supabase übermittelt und dort gespeichert. Diese Daten sind zwingend erforderlich, um Ihnen Zugang zum internen Crew-Bereich zu gewähren und Ihre Inhalte zuzuordnen.</p>
+                    <p class="text-light small">Die Verarbeitung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung bzw. vorvertragliche Maßnahmen).</p>
+                </div>
+
+                <div class="privacy-section mb-4">
+                    <h5 class="text-purple-glow fw-bold text-uppercase">5. Lokale Speicherung (Local Storage)</h5>
+                    <p class="text-light small">Diese Web-App verwendet zur Aufrechterhaltung der aktiven Sitzung (damit Sie nach einem Seiten-Neuladen nicht direkt ausgeloggt werden) den sogenannten "Local Storage" Ihres Browsers. Darin wird lediglich Ihr lokaler Login-Status (z. B. Ihr Username und Ihre Rolle) gespeichert, bis Sie sich aktiv ausloggen. Es handelt sich um eine technisch notwendige Speicherung zur Erbringung unserer Dienste gemäß Art. 6 Abs. 1 lit. f DSGVO bzw. § 25 Abs. 2 TTDSG.</p>
+                </div>
+
+                <div class="privacy-section mb-4">
+                    <h5 class="text-purple-glow fw-bold text-uppercase">6. Kontaktformular (Web3Forms)</h5>
+                    <p class="text-light small">Wenn Sie uns per Kontaktformular Anfragen zukommen lassen (sofern auf der Seite eingebunden), werden Ihre Angaben aus dem Anfrageformular inklusive der von Ihnen dort angegebenen Kontaktdaten zwecks Bearbeitung der Anfrage und für den Fall von Anschlussfragen bei uns gespeichert.</p>
+                    <p class="text-light small">Diese Daten werden an den externen Dienstleister <strong>Web3Forms</strong> weitergeleitet, um die Nachricht an unser E-Mail-Postfach zuzustellen. Die Verarbeitung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (sofern es um vorvertragliche Maßnahmen geht) oder Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an effektiver Bearbeitung).</p>
+                </div>
+
+                <div class="privacy-section mb-4">
+                    <h5 class="text-purple-glow fw-bold text-uppercase">7. Verlinkung zu externen Diensten (Discord)</h5>
+                    <p class="text-light small">Diese Website verweist über Schaltflächen ggf. auf die Kommunikationsplattform <strong>Discord</strong>. Wir weisen darauf hin, dass wir keinen Einfluss darauf haben, wie Discord Ihre Daten verarbeitet, sobald Sie den entsprechenden Links folgen und die Plattform nutzen. Informationen zur Erhebung und Nutzung Ihrer Daten durch Discord finden Sie in den dortigen Datenschutzhinweisen unter <a href="https://discord.com/privacy" target="_blank" class="text-warning">discord.com/privacy</a>.</p>
+                </div>
+
+                <div class="privacy-section mb-4">
+                    <h5 class="text-purple-glow fw-bold text-uppercase">8. Ihre Rechte</h5>
+                    <p class="text-light small mb-0">Sie haben im Rahmen der geltenden gesetzlichen Bestimmungen jederzeit das Recht auf unentgeltliche Auskunft über Ihre gespeicherten personenbezogenen Daten, deren Herkunft und Empfänger und den Zweck der Datenverarbeitung und ggf. ein Recht auf Berichtigung oder Löschung dieser Daten. Hierzu sowie zu weiteren Fragen zum Thema Datenschutz können Sie sich jederzeit unter der im Impressum angegebenen E-Mail-Adresse an uns wenden.</p>
+                </div>
+                
+                <div class="text-center mt-5">
+                    <button class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-lg" onclick="switchView(state.currentUser ? 'dashboard' : 'landing')">
+                        <i class="bi bi-arrow-left me-2"></i> Zurück
+                    </button>
+                </div>
+            </div>
+        </section>
+        <!-- VIEW: IMPRESSUM -->
+        <section id="view-impressum" class="app-view">
+            <div class="content-card mx-auto text-center" style="max-width: 600px; padding: 40px;">
+                <h2 class="text-uppercase fw-bold mb-4 text-warning" style="border-bottom: 1px solid rgba(157,78,221,0.3); padding-bottom: 15px;">Impressum</h2>
+                
+                <div class="mb-4 pt-2">
+                    <h6 class="text-purple-glow fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Name des Inhabers</h6>
+                    <p class="text-white fw-bold fs-5 mb-0">Nico Anschau</p>
+                </div>
+                
+                <div class="mb-4" style="border-top: 1px dashed rgba(157,78,221,0.2); padding-top: 20px;">
+                    <h6 class="text-purple-glow fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Ort</h6>
+                    <p class="text-white fw-bold fs-5 mb-0">Hüffler</p>
+                </div>
+                
+                <div class="mb-4" style="border-top: 1px dashed rgba(157,78,221,0.2); padding-top: 20px;">
+                    <h6 class="text-purple-glow fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Kontakt</h6>
+                    <p class="mb-0"><a href="mailto:nico.anschau1998@gmail.com" class="text-warning text-decoration-none fw-bold fs-5">nico.anschau1998@gmail.com</a></p>
+                </div>
+
+                <div class="text-center mt-5">
+                    <button class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-lg" onclick="switchView(state.currentUser ? 'dashboard' : 'landing')">
+                        <i class="bi bi-arrow-left me-2"></i> Zurück
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container text-center">
+            <p class="text-white mb-3 fs-5">&copy; 2026 Pixel Rider. Alle Rechte vorbehalten.</p>
+            <div class="mb-4">
+                <a href="#" onclick="switchView('privacy'); return false;" class="text-decoration-none fs-5" style="color: var(--brand-purple-glow);">Datenschutz</a>
+                <span class="text-muted mx-2" style="color: var(--brand-gold) !important;">|</span>
+                <a href="#" onclick="switchView('impressum'); return false;" class="text-decoration-none fs-5" style="color: var(--brand-purple-glow);">Impressum</a>
+            </div>
+            <div class="d-flex justify-content-center gap-4">
+                <a href="#" class="social-icon-link"><i class="bi bi-instagram"></i></a>
+                <a href="#" class="social-icon-link"><i class="bi bi-tiktok"></i></a>
+                <a href="#" class="social-icon-link"><i class="bi bi-youtube"></i></a>
+            </div>
+        </div>
+    </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>

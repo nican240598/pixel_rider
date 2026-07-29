@@ -212,7 +212,7 @@ function updateDynamicBackground(viewName) {
 }
 
 function switchView(viewName) {
-    if (!state.currentUser && viewName !== 'landing') viewName = 'landing';
+    if (!state.currentUser && viewName !== 'landing' && viewName !== 'privacy' && viewName !== 'impressum') viewName = 'landing';
     
     document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
     updateDynamicBackground(viewName);
@@ -275,19 +275,66 @@ function updateNavbar() {
     }
 }
 
+// ---- ADMIN TAB-WECHSEL ----
+function switchAdminNotifTab(tab) {
+    const unreadPanel  = document.getElementById('adminPanelUnread');
+    const archivePanel = document.getElementById('adminPanelArchive');
+    const tabUnread    = document.getElementById('tabAdminUnread');
+    const tabArchive   = document.getElementById('tabAdminArchive');
+    if (!unreadPanel) return;
+
+    if (tab === 'unread') {
+        unreadPanel.classList.remove('d-none');
+        archivePanel.classList.add('d-none');
+        tabUnread.classList.add('active');
+        tabArchive.classList.remove('active');
+    } else {
+        unreadPanel.classList.add('d-none');
+        archivePanel.classList.remove('d-none');
+        tabArchive.classList.add('active');
+        tabUnread.classList.remove('active');
+    }
+}
+
+// ---- ADMIN AKTION LOGGEN ----
+async function logAdminAction(message, type = 'success') {
+    await db.from('user_notifications').insert([{
+        target_username: 'SYSTEM_ADMIN',
+        message: message,
+        reason: '',
+        type: type,
+        is_read: true, // Direkt ins Archiv
+        created_by: state.currentUser.username
+    }]);
+}
+
 async function openPasswordResetsModal() {
     if (!state.currentUser || (!state.currentUser.isAdmin && !state.currentUser.isModerator)) return;
-
-    const listContainer = document.getElementById("passwordResetsList");
-    if(!listContainer) return;
     
-    listContainer.innerHTML = '<p class="text-center text-muted py-3">Lade Anfragen...</p>';
+    // Bereinigung für Admin-Archiv läuft über die User-Funktion, die auch target_username = SYSTEM_ADMIN mitlöscht.
+    purgeOldNotifications();
 
+    const panelUnread  = document.getElementById("adminPanelUnread");
+    const panelArchive = document.getElementById("adminPanelArchive");
+    const countUnread  = document.getElementById("adminUnreadCount");
+    const countArchive = document.getElementById("adminArchiveCount");
+    if(!panelUnread) return;
+    
+    panelUnread.innerHTML = '<p class="text-center text-muted py-3">Lade Anfragen...</p>';
+
+    // Unread Queries
     let { data: resetUsers, error: err1 } = await db.from('users').select('*').eq('reset_requested', true);
     let { data: inviteUsers, error: err2 } = await db.from('users').select('*').eq('invite', 'PENDING');
+    
+    // Archive Query
+    let { data: archiveNotifs } = await db.from('user_notifications')
+        .select('*')
+        .eq('target_username', 'SYSTEM_ADMIN')
+        .eq('is_read', true)
+        .order('created_at', { ascending: false });
 
     if (err1 || err2) {
-        listContainer.innerHTML = '<p class="text-center text-danger">Fehler beim Laden der Anfragen aus der Datenbank.</p>';
+        panelUnread.innerHTML = '<p class="text-center text-danger">Fehler beim Laden der Anfragen aus der Datenbank.</p>';
         return;
     }
 
@@ -313,12 +360,27 @@ async function openPasswordResetsModal() {
             });
         });
     }
+    
+    // Zähler aktualisieren
+    if (allRequests.length > 0) {
+        countUnread.textContent = allRequests.length;
+        countUnread.classList.remove('d-none');
+    } else {
+        countUnread.classList.add('d-none');
+    }
+    const archiveCount = archiveNotifs ? archiveNotifs.length : 0;
+    countArchive.textContent = archiveCount;
 
+    // UNREAD TAB RENDERN
     if (allRequests.length === 0) {
-        listContainer.innerHTML = '<p class="text-center text-purple-glow py-4 mb-0">Keine offenen Anfragen vorhanden.</p>';
+        panelUnread.innerHTML = `<div class="text-center py-5">
+               <i class="bi bi-check-circle" style="font-size:3rem; color: rgba(197,160,26,0.35);"></i>
+               <p class="text-warning mt-3 mb-0 fw-bold">Alles erledigt!</p>
+               <p class="text-muted small mt-1">Es liegen keine offenen Anfragen vor.</p>
+           </div>`;
     } else {
         allRequests.sort((a, b) => new Date(b.date) - new Date(a.date));
-        listContainer.innerHTML = allRequests.map(req => {
+        panelUnread.innerHTML = allRequests.map(req => {
             let fd = 'Unbekannt';
             try {
                 let d = new Date(req.date);
@@ -337,17 +399,53 @@ async function openPasswordResetsModal() {
             </div>`;
         }).join('');
     }
+    
+    // ARCHIVE TAB RENDERN
+    if (archiveCount === 0) {
+        panelArchive.innerHTML = `<div class="text-center py-5">
+               <i class="bi bi-archive" style="font-size:3rem; color: rgba(255,255,255,0.1);"></i>
+               <p class="text-muted mt-3 mb-0">Das Admin-Archiv ist leer.</p>
+           </div>`;
+    } else {
+        panelArchive.innerHTML = `<p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Archivierte Einträge werden nach <b>30 Tagen</b> automatisch gelöscht.</p>` 
+            + archiveNotifs.map(n => {
+            let fd = 'Unbekannt';
+            try {
+                const d = new Date(n.created_at);
+                fd = `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} Uhr`;
+            } catch(e) {}
+            
+            const typeIcon = n.type === 'danger'
+                ? '<i class="bi bi-trash-fill" style="color:#ef233c;"></i>'
+                : n.type === 'success'
+                ? '<i class="bi bi-check-circle-fill" style="color:#4ade80;"></i>'
+                : '<i class="bi bi-shield-lock-fill" style="color:var(--brand-gold-glow);"></i>';
+
+            return `
+            <div class="notif-card notif-read" data-type="${n.type}">
+                <div class="notif-header">
+                    <div class="notif-title-row">
+                        ${typeIcon}
+                        <span class="notif-message">${n.message}</span>
+                    </div>
+                    <span class="notif-time">${fd}</span>
+                </div>
+                <div class="notif-footer mt-2 pt-2" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                    <span class="notif-from"><i class="bi bi-person-fill-check me-1" style="color:var(--brand-gold-glow);"></i>Erledigt von: <b>${n.created_by || 'Admin'}</b></span>
+                    <span class="notif-done"><i class="bi bi-check2-all me-1"></i>Archiviert</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    switchAdminNotifTab('unread');
     showModal("passwordResetsModal");
 }
 
 async function refreshAdminNotifications() {
     if (!state.currentUser || (!state.currentUser.isAdmin && !state.currentUser.isModerator)) return;
-    let { data: usersReset } = await db.from('users').select('*').eq('reset_requested', true);
-    let { data: usersInvite } = await db.from('users').select('*').eq('invite', 'PENDING');
-    let count = (usersReset ? usersReset.length : 0) + (usersInvite ? usersInvite.length : 0);
     checkAdminNotifications(); 
-    if (count === 0) { hideModal("passwordResetsModal"); switchView('dashboard'); } 
-    else { openPasswordResetsModal(); }
+    openPasswordResetsModal();
 }
 
 async function approveInviteRequest(username) {
@@ -355,6 +453,7 @@ async function approveInviteRequest(username) {
     const randomCode = 'RIDER-' + Math.random().toString(36).substring(2, 7).toUpperCase();
     await db.from('invite_codes').insert([{ code: randomCode, created_by: state.currentUser.username, is_used: true, used_by: username }]);
     await db.from('users').update({ invite: randomCode }).eq('username', username);
+    await logAdminAction(`Invite-Anfrage für <b>${username}</b> freigegeben.`, 'success');
     refreshAdminNotifications();
     if (state.currentView === 'admin') renderAdminPanel();
 }
@@ -362,6 +461,7 @@ async function approveInviteRequest(username) {
 async function dismissInviteRequest(username) {
     if (!state.currentUser || (!state.currentUser.isAdmin && !state.currentUser.isModerator)) return;
     await db.from('users').delete().eq('username', username);
+    await logAdminAction(`Invite-Anfrage für <b>${username}</b> abgelehnt/gelöscht.`, 'danger');
     refreshAdminNotifications();
     if (state.currentView === 'admin') renderAdminPanel();
 }
@@ -392,6 +492,7 @@ async function executeResetPassword() {
     const username = userToReset;
     const resetHash = await hashPassword("1234");
     await db.from('users').update({ password: resetHash, reset_requested: false }).eq('username', username);
+    await logAdminAction(`Passwort-Reset für <b>${username}</b> durchgeführt.`, 'warning');
     hideModal("confirmResetModal");
     userToReset = null;
     const srat = document.getElementById("successResetAdminText");
@@ -404,6 +505,7 @@ async function executeResetPassword() {
 async function modalDismissReset(username) {
     if (!state.currentUser || (!state.currentUser.isAdmin && !state.currentUser.isModerator)) return;
     await db.from('users').update({ reset_requested: false }).eq('username', username);
+    await logAdminAction(`Passwort-Reset-Anfrage für <b>${username}</b> verworfen.`, 'danger');
     refreshAdminNotifications();
     if (state.currentView === 'admin') renderAdminPanel();
 }
