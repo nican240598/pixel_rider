@@ -1,4 +1,4 @@
-﻿/* =========================================
+/* =========================================
    1. SUPABASE KONFIGURATION & INIT
    ========================================= */
 const SUPABASE_URL = 'https://anxhzeovqgokcorvjttu.supabase.co';
@@ -1087,6 +1087,7 @@ async function saveNewEvent(title, organizer, date_time, location, description, 
     document.getElementById("eventForm").reset();
     hideModal("createEventModal");
     renderEvents();
+    renderUpcomingEventsSidebar();
 }
 
 async function renderEvents() {
@@ -1158,7 +1159,7 @@ async function renderEvents() {
 
         htmlBuilder += `
         <div class="${colClass}">
-            <div class="single-event-card ${isNextEvent ? 'border-warning shadow-lg' : ''}" style="${isNextEvent ? 'background: linear-gradient(135deg, rgba(197, 160, 26, 0.1) 0%, rgba(10, 10, 12, 0.8) 100%);' : ''}">
+            <div id="event-card-${ev.id}" class="single-event-card ${isNextEvent ? 'border-warning shadow-lg' : ''}" style="${isNextEvent ? 'background: linear-gradient(135deg, rgba(197, 160, 26, 0.1) 0%, rgba(10, 10, 12, 0.8) 100%);' : ''}">
                 <div>
                     ${imgHtml}
                     ${highlightBadge}
@@ -1197,6 +1198,7 @@ async function deleteEvent(eventId) {
     if (await showCustomConfirm("Möchtest du dieses Event wirklich löschen?", "Event Absagen")) {
         await db.from('crew_events').delete().eq('id', eventId);
         renderEvents();
+        renderUpcomingEventsSidebar();
     }
 }
 
@@ -1239,11 +1241,11 @@ document.getElementById("editEventForm")?.addEventListener("submit", async funct
         reader.onload = async () => {
             updateData.image_data = reader.result;
             await db.from('crew_events').update(updateData).eq('id', activeEditEventId);
-            hideModal("editEventModal"); renderEvents();
+            hideModal("editEventModal"); renderEvents(); renderUpcomingEventsSidebar();
         };
     } else {
         await db.from('crew_events').update(updateData).eq('id', activeEditEventId);
-        hideModal("editEventModal"); renderEvents();
+        hideModal("editEventModal"); renderEvents(); renderUpcomingEventsSidebar();
     }
 });
 
@@ -2022,6 +2024,8 @@ async function sendUserNotification(toUsername, messageHtml, reason, type = 'war
 
 async function checkUserNotifications() {
     if (!state.currentUser) return;
+    
+
     let { data: notifs } = await db.from('user_notifications')
         .select('id')
         .eq('target_username', state.currentUser.username)
@@ -2069,6 +2073,8 @@ function switchNotifTab(tab) {
 // ---- BENACHRICHTIGUNGEN ÖFFNEN (mit Tabs) ----
 async function openUserNotificationsModal() {
     if (!state.currentUser) return;
+    
+
 
     // Bereinigung im Hintergrund
     purgeOldNotifications();
@@ -2177,6 +2183,8 @@ async function markNotificationRead(notifId) {
 
 async function renderProfile() {
     if (!state.currentUser) return;
+    
+
     document.getElementById('profileCurrentUsername').innerText = state.currentUser.username;
     document.getElementById('profileEmail').value = state.currentUser.email || '';
     document.getElementById('profilePassword').value = '';
@@ -2318,7 +2326,10 @@ let currentPresenceState = {};
 
 function initPresence() {
     initGlobalChatListener();
+    renderUpcomingEventsSidebar();
     if (!state.currentUser) return;
+    
+
     
     // Show the sidebar and toggle
     document.getElementById('onlineUsersSidebar')?.classList.remove('d-none');
@@ -2354,6 +2365,7 @@ function initPresence() {
 
 function stopPresence() {
     stopGlobalChatListener();
+    if (eventsCountdownInterval) clearInterval(eventsCountdownInterval);
     if (presenceChannel) {
         presenceChannel.unsubscribe();
         presenceChannel = null;
@@ -2471,6 +2483,8 @@ let globalChatInterval = null;
 async function initGlobalChatListener() {
     if (!state.currentUser) return;
     
+
+    
     // Stop any existing intervals to avoid duplicates
     if (globalChatInterval) {
         clearInterval(globalChatInterval);
@@ -2494,6 +2508,15 @@ function stopGlobalChatListener() {
 async function checkUnreadMessages() {
     if (!state.currentUser) return;
     
+    // Check if our username changed in the database (e.g. admin approved name change)
+    let { data: me } = await db.from('users').select('username').eq('email', state.currentUser.email).single();
+    if (me && me.username !== state.currentUser.username) {
+        state.currentUser.username = me.username;
+        localStorage.setItem("app_user", JSON.stringify(state.currentUser));
+        initPresence(); // Reconnect presence with new name
+        return; // Let the new presence init handle everything else
+    }
+
     let { data: unread } = await db.from('direct_messages')
         .select('id, sender, is_read')
         .eq('receiver', state.currentUser.username)
@@ -2654,6 +2677,101 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 
+
+
+
+
+
+/* =========================================
+   EVENTS SIDEBAR & COUNTDOWN
+   ========================================= */
+let upcomingEventsCache = [];
+let eventsCountdownInterval = null;
+
+function toggleEventsSidebar() {
+    const sidebar = document.getElementById('eventsSidebar');
+    if (sidebar) sidebar.classList.toggle('show');
+}
+
+async function renderUpcomingEventsSidebar() {
+    if (!state.currentUser) return;
+    
+
+    
+    document.getElementById('eventsSidebar')?.classList.remove('d-none');
+    document.getElementById('eventsSidebarToggle')?.classList.remove('d-none');
+
+    let { data: events } = await db.from('crew_events').select('*');
+    if (!events) events = [];
+    
+    let now = new Date();
+    upcomingEventsCache = events.filter(e => new Date(e.date_time) > now);
+    upcomingEventsCache.sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
+    
+    updateEventsCountdownUI();
+    
+    if (eventsCountdownInterval) clearInterval(eventsCountdownInterval);
+    eventsCountdownInterval = setInterval(updateEventsCountdownUI, 1000);
+}
+
+function updateEventsCountdownUI() {
+    const listEl = document.getElementById('eventsSidebarList');
+    if (!listEl) return;
+    
+    if (upcomingEventsCache.length === 0) {
+        listEl.innerHTML = '<p class="text-white-50 small p-3">Keine anstehenden Events</p>';
+        return;
+    }
+    
+    let now = new Date();
+    let html = '';
+    
+    upcomingEventsCache.forEach(ev => {
+        let evTime = new Date(ev.date_time);
+        let diff = evTime - now;
+        
+        let timeStr = "";
+        if (diff > 0) {
+            let d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            let h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            let m = Math.floor((diff / 1000 / 60) % 60);
+            let s = Math.floor((diff / 1000) % 60);
+            
+            // Format numbers to be two digits
+            let pad = (num) => String(num).padStart(2, '0');
+            timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m) + ":" + pad(s);
+        } else {
+            timeStr = "<span class='text-success fw-bold'>Läuft jetzt!</span>";
+        }
+        
+        html += `
+            <div class="event-countdown-item" style="cursor:pointer;" onclick="goToEvent('${ev.id}')">
+                <div class="text-white fw-bold text-truncate" title="${escapeHTML(ev.title)}">${escapeHTML(ev.title)}</div>
+                <div class="text-warning small mt-1 d-flex justify-content-between">
+                    <span><i class="bi bi-clock-history me-1"></i>${timeStr}</span>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+            </div>
+        `;
+    });
+    
+    listEl.innerHTML = html;
+}
+
+function goToEvent(eventId) {
+    if (window.innerWidth < 768) {
+        toggleEventsSidebar(); // Close on mobile
+    }
+    switchView('events');
+    setTimeout(() => {
+        const card = document.getElementById('event-card-' + eventId);
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('shadow-lg', 'border-warning');
+            setTimeout(() => card.classList.remove('shadow-lg', 'border-warning'), 2500);
+        }
+    }, 500);
+}
 
 
 
