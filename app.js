@@ -1,4 +1,4 @@
-/* =========================================
+﻿/* =========================================
    1. SUPABASE KONFIGURATION & INIT
    ========================================= */
 const SUPABASE_URL = 'https://anxhzeovqgokcorvjttu.supabase.co';
@@ -2466,52 +2466,66 @@ async function showPublicProfile(username) {
    GLOBAL CHAT NOTIFICATIONS
    ========================================= */
 let unreadDirectMessages = {}; 
-let globalChatSubscription = null;
+let globalChatInterval = null;
 
 async function initGlobalChatListener() {
     if (!state.currentUser) return;
     
-    // Fetch initial unread messages count
-    let { data: unread } = await db.from('direct_messages')
-        .select('sender')
-        .eq('receiver', state.currentUser.username)
-        .eq('is_read', false);
-        
-    unreadDirectMessages = {};
-    if (unread) {
-        unread.forEach(msg => {
-            unreadDirectMessages[msg.sender] = (unreadDirectMessages[msg.sender] || 0) + 1;
-        });
-    }
-    renderOnlineUsers(); // Re-render to show any badges
-
-    if (globalChatSubscription) {
-        db.removeChannel(globalChatSubscription);
+    // Stop any existing intervals to avoid duplicates
+    if (globalChatInterval) {
+        clearInterval(globalChatInterval);
     }
     
-    globalChatSubscription = db.channel('global_direct_messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages', filter: 'receiver=eq.' + state.currentUser.username }, payload => {
-            const msg = payload.new;
-            if (activeDirectChatUser === msg.sender) {
-                // Chat window is open, mark as read
-                db.from('direct_messages').update({ is_read: true }).eq('id', msg.id).then();
-                playNotificationSound();
-            } else {
-                // Chat window is not open, increment badge
-                unreadDirectMessages[msg.sender] = (unreadDirectMessages[msg.sender] || 0) + 1;
-                renderOnlineUsers();
-                playNotificationSound();
-            }
-        })
-        .subscribe();
+    // Initial fetch
+    await checkUnreadMessages();
+    
+    // Polling every 3 seconds
+    globalChatInterval = setInterval(checkUnreadMessages, 3000);
 }
 
 function stopGlobalChatListener() {
-    if (globalChatSubscription) {
-        db.removeChannel(globalChatSubscription);
-        globalChatSubscription = null;
+    if (globalChatInterval) {
+        clearInterval(globalChatInterval);
+        globalChatInterval = null;
     }
     unreadDirectMessages = {};
+}
+
+async function checkUnreadMessages() {
+    if (!state.currentUser) return;
+    
+    let { data: unread } = await db.from('direct_messages')
+        .select('id, sender, is_read')
+        .eq('receiver', state.currentUser.username)
+        .eq('is_read', false);
+        
+    if (!unread) return;
+    
+    let newCounts = {};
+    unread.forEach(msg => {
+        newCounts[msg.sender] = (newCounts[msg.sender] || 0) + 1;
+    });
+    
+    let playSound = false;
+    
+    for (let sender in newCounts) {
+        // If we have a new sender or the count increased, it's a new message
+        if (!unreadDirectMessages[sender] || newCounts[sender] > unreadDirectMessages[sender]) {
+            playSound = true;
+        }
+    }
+    
+    unreadDirectMessages = newCounts;
+    renderOnlineUsers(); // Re-render to show any badges
+    
+    if (playSound) {
+        playNotificationSound();
+    }
+    
+    // If the chat modal is open, we should also poll the actual messages
+    if (activeDirectChatUser) {
+        loadDirectMessages(); // This will refresh the chat window if open
+    }
 }
 
 function playNotificationSound() {
@@ -2633,6 +2647,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 });
+
 
 
 
