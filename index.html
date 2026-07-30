@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -14,6 +14,16 @@
     <!-- Leaflet.js CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
+    <style>
+        .crew-card { transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden; border: 1px solid rgba(197,160,26,0.2); border-radius: 1rem; }
+        .crew-card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(197,160,26,0.35) !important; border-color: rgba(197,160,26,0.6); }
+        .crew-card img { transition: transform 0.5s ease; }
+        .crew-card:hover img { transform: scale(1.08); }
+        #crewSection .card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        #crewSection .card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(197,160,26,0.35) !important; }
+        #crewSection .card img { transition: transform 0.5s ease; }
+        #crewSection .card:hover img { transform: scale(1.08); }
+    </style>
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -57,7 +67,7 @@
     <!-- Header Navigation -->
     <nav class="header-nav">
         <div class="nav-container">
-            <a class="nav-brand" onclick="switchView(state.currentUser ? 'dashboard' : 'landing')">PIXEL<span>RIDER</span></a>
+            <a class="nav-brand" style="cursor:pointer;" onclick="switchView('landing')">PIXEL<span>RIDER</span></a>
             <div id="navLinks" class="d-flex gap-2 align-items-center"></div>
         </div>
     </nav>
@@ -66,7 +76,7 @@
         <!-- VIEW 1: LANDINGPAGE -->
         <section id="view-landing" class="app-view py-5 text-center">
             <h1 class="display-3 fw-bold text-uppercase mb-3">Pixel Rider</h1>
-            <p class="fs-4 text-warning mb-5">â€žAlleine nur ein unbedeutender Pixel, zusammen eine einzigartige Communityâ€œ</p>
+            <p class="fs-4 text-warning mb-5">„Alleine nur ein unbedeutender Pixel, zusammen eine einzigartige Community“</p>
 
             <div class="row g-4 justify-content-center mb-5 text-start">
                 <!-- 1. Zusammenhalt -->
@@ -74,7 +84,7 @@
                     <div class="feature-card h-100">
                         <i class="bi bi-people-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Zusammenhalt</h4>
-                        <p class="text-light fs-6">Egal welches Bike in deiner Garage steht â€“ bei uns zählt der Charakter unterm Helm. Wir starten gemeinsam, wir kommen gemeinsam an. Bei Pixel Rider bleibt niemand zurück.</p>
+                        <p class="text-light fs-6">Egal welches Bike in deiner Garage steht – bei uns zählt der Charakter unterm Helm. Wir starten gemeinsam, wir kommen gemeinsam an. Bei Pixel Rider bleibt niemand zurück.</p>
                     </div>
                 </div>
                 <!-- 2. Schrauber-Hilfe -->
@@ -90,7 +100,7 @@
                     <div class="feature-card h-100">
                         <i class="bi bi-chat-quote-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Wissensaustausch</h4>
-                        <p class="text-light fs-6">Ob die besten Kurven-Setups, ehrliche Reifenempfehlungen oder versteckte GPX-Routen â€“ wir teilen unser Wissen offen, ehrlich und immer auf Augenhöhe.</p>
+                        <p class="text-light fs-6">Ob die besten Kurven-Setups, ehrliche Reifenempfehlungen oder versteckte GPX-Routen – wir teilen unser Wissen offen, ehrlich und immer auf Augenhöhe.</p>
                     </div>
                 </div>
                 <!-- 4. Ride Outs & Events -->
@@ -98,7 +108,7 @@
                     <div class="feature-card h-100">
                         <i class="bi bi-calendar-event-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Ride Outs & Events</h4>
-                        <p class="text-light fs-6">Der Asphalt ist unser Zuhause. Von der spontanen Feierabendrunde über epische Tagestouren bis hin zu exklusiven Crew-Events â€“ wir leben für den gemeinsamen Ride.</p>
+                        <p class="text-light fs-6">Der Asphalt ist unser Zuhause. Von der spontanen Feierabendrunde über epische Tagestouren bis hin zu exklusiven Crew-Events – wir leben für den gemeinsamen Ride.</p>
                     </div>
                 </div>
                 <!-- 5. WhatsApp Community -->
@@ -106,7 +116,7 @@
                     <div class="feature-card h-100">
                         <i class="bi bi-whatsapp feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">WhatsApp Community</h4>
-                        <p class="text-light fs-6">Strukturiert, fokussiert und zu 100 % spamfrei. Unsere Gruppen sind thematisch sauber getrennt â€“ von der Verabredung zur Tour bis hin zum echten Technik-Nerd-Talk.</p>
+                        <p class="text-light fs-6">Strukturiert, fokussiert und zu 100 % spamfrei. Unsere Gruppen sind thematisch sauber getrennt – von der Verabredung zur Tour bis hin zum echten Technik-Nerd-Talk.</p>
                     </div>
                 </div>
                 <!-- 6. Admins & Moderatoren -->
@@ -118,6 +128,27 @@
                     </div>
                 </div>
             </div>
+
+            <!-- PIXEL RIDER CREW SECTION -->
+            <div class="py-5 mt-5" style="position:relative; z-index:10;">
+                <div class="container text-center">
+                    <h2 class="display-5 fw-bold text-uppercase mb-3" style="color: var(--brand-gold);">Pixel Rider <span class="text-white">Crew</span></h2>
+                    <div class="row justify-content-center" id="landing-crew-container">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: CREW ADMIN -->
+        <section id="view-crew_admin" class="app-view container py-5" style="margin-top: 80px;">
+            <h2 class="text-center text-uppercase fw-bold mb-4" style="color: var(--brand-gold);">Crew Verwaltung</h2>
+            <div class="text-center mb-4">
+                <button class="btn rounded-pill px-4 fw-bold shadow-lg text-dark" style="background: var(--brand-gold);" onclick="document.getElementById('crewForm').reset(); activeEditCrewId=null; crewNewImageToAdd=null; renderCrewImagePreview(); new bootstrap.Modal(document.getElementById('crewModal')).show();">
+                    <i class="bi bi-plus-circle-fill me-2"></i>Neues Mitglied
+                </button>
+            </div>
+            <div class="row g-4" id="crew-container"></div>
+            <div class="text-center mt-5"><button class="btn btn-outline-light rounded-pill px-4" onclick="switchView('dashboard')">Zurück zum Dashboard</button></div>
         </section>
 
         <!-- VIEW 2: MEMBER DASHBOARD -->
@@ -136,7 +167,7 @@
                     <div class="feature-card">
                         <i class="bi bi-chat-quote-fill feature-icon"></i>
                         <h4 class="text-white text-uppercase fw-bold">Wissensaustausch</h4>
-                        <p class="card-description">Technische Fragen, Schrauber-Hilfe und Tourentipps im Forum.</p>
+                        <p class="card-description">Technische Füragen, Schrauber-Hilfe und Tourentipps im Forum.</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-4" onclick="switchView('events')">
@@ -160,6 +191,22 @@
                         <p class="card-description">Zeige dein Bike und entdecke die Umbauten der Crew.</p>
                     </div>
                 </div>
+                <!-- Flohmarkt -->
+                <div class="col-md-6 col-lg-4" onclick="switchView('market')">
+                    <div class="feature-card">
+                        <i class="bi bi-cart-fill feature-icon"></i>
+                        <h4 class="text-white text-uppercase fw-bold">Flohmarkt</h4>
+                        <p class="card-description">Fahrzeuge, Teile und Kleidung kaufen und verkaufen.</p>
+                    </div>
+                </div>
+                <!-- ADMIN: Crew Verwaltung Card -->
+                <div class="col-md-6 col-lg-4 d-none" id="dashboardCrewAdminCard" onclick="switchView('crew_admin')">
+                    <div class="feature-card">
+                        <i class="bi bi-people-fill feature-icon"></i>
+                        <h4 class="text-white text-uppercase fw-bold">Crew Verwaltung</h4>
+                        <p class="card-description">Pixel Rider Crew-Mitglieder verwalten.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -172,7 +219,7 @@
                     <h5 class="text-white">Aktueller Benutzername:</h5>
                     <h2 class="text-purple-glow fw-bold" id="profileCurrentUsername">-</h2>
                     <button class="btn btn-sm btn-outline-warning mt-2" onclick="requestUsernameChange()">
-                        <i class="bi bi-pencil-square me-1"></i> Namensänderung anfragen
+                        <i class="bi bi-pencil-square me-1"></i> NamensäÄnderung anfüragen
                     </button>
                     <p class="text-white small mt-2">Namen können nur durch einen Admin geändert werden.</p>
                 </div>
@@ -403,7 +450,226 @@
                 <div class="text-center mt-5"><button class="btn btn-outline-light rounded-pill px-4" onclick="switchView('dashboard')">Zurück zum Dashboard</button></div>
             </div>
         </section>
+            <!-- VIEW: MARKET -->
+        <section id="view-market" class="app-view container py-5" style="margin-top: 80px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-uppercase fw-bold m-0" style="color: var(--brand-gold);"><i class="bi bi-cart-fill me-2"></i>Flohmarkt</h2>
+                <button class="btn rounded-pill px-4 fw-bold shadow-lg text-dark" style="background: var(--brand-gold);" onclick="document.getElementById('createMarketForm').reset(); new bootstrap.Modal(document.getElementById('createMarketModal')).show();">
+                    <i class="bi bi-plus-circle-fill me-2"></i>Neues Inserat
+                </button>
+            </div>
+            
+            <div class="d-flex gap-3 mb-4 overflow-auto pb-2" id="market-categories">
+                <button class="btn btn-outline-warning rounded-pill active" onclick="filterMarket('Alle')">Alle</button>
+                <button class="btn btn-outline-warning rounded-pill" onclick="filterMarket('Fahrzeug')">Fahrzeuge</button>
+                <button class="btn btn-outline-warning rounded-pill" onclick="filterMarket('Teile')">Teile</button>
+                <button class="btn btn-outline-warning rounded-pill" onclick="filterMarket('Kleidung')">Kleidung</button>
+                <button class="btn btn-outline-warning rounded-pill" onclick="filterMarket('Sonstiges')">Sonstiges</button>
+            </div>
+
+            <div class="row g-4" id="marketGrid"></div>
+            <div class="text-center mt-5"><button class="btn btn-outline-light rounded-pill px-4" onclick="switchView('dashboard')">Zurück zum Dashboard</button></div>
+        </section>
+
+        <!-- CREATE MARKET MODAL -->
+        <div class="modal fade" id="createMarketModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-white border-warning">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-warning fw-bold">Neues Inserat erstellen</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="createMarketForm">
+                            <div class="mb-3">
+                                <label class="form-label text-warning">Titel *</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" id="marketTitle" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-warning">Kategorie *</label>
+                                    <select class="form-select bg-dark text-white border-secondary" id="marketCategory" required onchange="toggleMobileLink()">
+                                        <option value="Fahrzeug">Fahrzeug</option>
+                                        <option value="Teile">Teile</option>
+                                        <option value="Kleidung">Kleidung</option>
+                                        <option value="Sonstiges">Sonstiges</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-warning">Preis (€) *</label>
+                                    <input type="number" class="form-control bg-dark text-white border-secondary" id="marketPrice" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-warning">Beschreibung *</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" id="marketDescription" rows="4" required></textarea>
+                            </div>
+                            
+                            <h6 class="text-warning mt-4">Links (Optional)</h6>
+                            <div class="mb-3">
+                                <input type="url" class="form-control bg-dark text-white border-secondary" id="marketLinkEbay" placeholder="eBay / Kleinanzeigen Link">
+                            </div>
+                            <div class="mb-3">
+                                <input type="url" class="form-control bg-dark text-white border-secondary" id="marketLinkFb" placeholder="Facebook Marketplace Link">
+                            </div>
+                            <div class="mb-3" id="mobileLinkContainer">
+                                <input type="url" class="form-control bg-dark text-white border-secondary" id="marketLinkMobile" placeholder="mobile.de Link">
+                            </div>
+
+                            <h6 class="text-warning mt-4">Bilder (Mindestens 1) *</h6>
+                            <div class="mb-3">
+                                <input class="form-control bg-dark text-white border-secondary" type="file" id="marketImages" accept="image/*" multiple required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-warning fw-bold text-dark" onclick="submitMarketItem()">Inserat aufgeben</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- EDIT MARKET MODAL -->
+        <div class="modal fade" id="editMarketModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-white border-warning">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-warning fw-bold">Inserat bearbeiten</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editMarketForm">
+                            <input type="hidden" id="editMarketId">
+                            <div class="mb-3">
+                                <label class="form-label text-warning">Titel *</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" id="editMarketTitle" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-warning">Kategorie *</label>
+                                    <select class="form-select bg-dark text-white border-secondary" id="editMarketCategory" required onchange="toggleEditMobileLink()">
+                                        <option value="Fahrzeug">Fahrzeug</option>
+                                        <option value="Teile">Teile</option>
+                                        <option value="Kleidung">Kleidung</option>
+                                        <option value="Sonstiges">Sonstiges</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-warning">Preis (€) *</label>
+                                    <input type="number" class="form-control bg-dark text-white border-secondary" id="editMarketPrice" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-warning">Beschreibung *</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" id="editMarketDescription" rows="4" required></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-warning fw-bold text-dark" onclick="saveMarketEdit()">ÄÄnderungen speichern</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODERATION REASON MODAL -->
+        <div class="modal fade" id="moderationReasonModal" tabindex="-1" style="z-index: 1065;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark text-white border-danger">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Moderation: Begründung erforderlich</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Da du als Moderator ein Inserat eines anderen Users bearbeitest oder löschst, ist eine Begründung zwingend erforderlich. Der User wird darüber benachrichtigt.</p>
+                        <textarea id="moderationReasonInput" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Grund für die Moderation (z.B. Verstoß gegen Regeln...)"></textarea>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-danger fw-bold" onclick="confirmModerationAction()">Bestätigen & Ausführen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- APPEAL REASON MODAL -->
+        <div class="modal fade" id="appealReasonModal" tabindex="-1" style="z-index: 1065;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark text-white border-info">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-info fw-bold"><i class="bi bi-shield-exclamation me-2"></i>Einspruch einlegen</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Dein Inserat wurde von einem Moderator bearbeitet oder gelöscht. Wenn du damit nicht einverstanden bist, kannst du hier Einspruch einlegen. Das Admin-Team wird den Fall prüfen.</p>
+                        <textarea id="appealReasonInput" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Begründe deinen Einspruch..."></textarea>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-info text-dark fw-bold" onclick="submitAppeal()">Einspruch absenden</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
+
+    <!-- CREW MODAL (Admin/Mod) -->
+    <div class="modal fade" id="crewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-white rounded-4 border-0" style="background: rgba(9,9,11,0.99); border: 1px solid rgba(197,160,26,0.3) !important;">
+                <div class="d-flex justify-content-between align-items-center px-4 pt-4 pb-3" style="border-bottom: 1px solid rgba(197,160,26,0.2);">
+                    <div>
+                        <h5 class="modal-title fw-bold text-uppercase" style="color: var(--brand-gold);"><i class="bi bi-people-fill me-2"></i>Crew-Mitglied</h5>
+                        <small class="text-muted">Crew-Mitglied hinzufügen oder bearbeiten</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="crewForm">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase">Name</label>
+                            <input type="text" class="form-control auth-input" id="crewName" required placeholder="z.B. Nican">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase">Rolle</label>
+                            <input type="text" class="form-control auth-input" id="crewRole" required placeholder="z.B. Founder">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase">Bio (Optional)</label>
+                            <textarea class="form-control auth-input" id="crewBio" rows="2" placeholder="Kurze Beschreibung..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase">Bild (Optional)</label>
+                            <input type="file" class="form-control auth-input" id="crewImageInput" accept="image/*">
+                            <div id="crewImagePreview" class="d-flex flex-wrap gap-2 mt-2"></div>
+                        </div>
+                        <h6 class="text-warning mt-4 mb-3 border-bottom border-secondary pb-2">Social Media (Optional)</h6>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase"><i class="bi bi-instagram me-1"></i>Instagram Link</label>
+                            <input type="url" class="form-control auth-input" id="crewIg" placeholder="https://instagram.com/...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase"><i class="bi bi-tiktok me-1"></i>TikTok Link</label>
+                            <input type="url" class="form-control auth-input" id="crewTiktok" placeholder="https://tiktok.com/...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase"><i class="bi bi-youtube me-1"></i>YouTube Link</label>
+                            <input type="url" class="form-control auth-input" id="crewYoutube" placeholder="https://youtube.com/...">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small text-uppercase">Sortierung (Zahl)</label>
+                            <input type="number" class="form-control auth-input" id="crewSortOrder" value="0" placeholder="0">
+                            <div class="form-text text-muted">Kleinere Zahlen erscheinen weiter links.</div>
+                        </div>
+                        <button type="submit" class="btn rounded-pill w-100 fw-bold shadow-lg text-dark mt-3" style="background: var(--brand-gold);">Speichern</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL 1: LOGIN / REGISTRIEREN -->
     <div class="modal fade" id="authModal" tabindex="-1" aria-hidden="true">
@@ -480,7 +746,7 @@
             <div class="modal-content bg-dark text-white p-4 border border-success rounded-4 text-center" style="background: rgba(9, 9, 11, 0.99) !important;">
                 <i class="bi bi-check-circle-fill text-success mb-2" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(25, 135, 84, 0.5);"></i>
                 <h4 class="text-success fw-bold text-uppercase mt-2">Zwischengespeichert!</h4>
-                <p class="mb-4 mt-3 text-light">Deine Daten wurden hinterlegt. Ein Admin wird deinen Account freigeben.</p>
+                <p class="mb-4 mt-3 text-light">Deine Daten wurden hinterlegt. Ein Admin wird deinen Account füreigeben.</p>
                 <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-lg w-100" data-bs-dismiss="modal">Verstanden</button>
             </div>
         </div>
@@ -510,7 +776,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark text-white p-4 border border-success rounded-4 text-center">
                 <i class="bi bi-check-circle-fill text-success mb-2" style="font-size: 3.5rem; text-shadow: 0 0 15px rgba(25, 135, 84, 0.5);"></i>
-                <h4 class="text-success fw-bold text-uppercase mt-2">Anfrage gesendet!</h4>
+                <h4 class="text-success fw-bold text-uppercase mt-2">Anfürage gesendet!</h4>
                 <p class="mb-4 mt-3">Ein Admin wurde benachrichtigt.</p>
                 <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-lg w-100" data-bs-dismiss="modal">Verstanden</button>
             </div>
@@ -652,7 +918,7 @@
                             <option value="Allgemeines">Allgemeines</option>
                         </select>
                     </div>
-                    <div class="mb-3"><input type="text" class="input-custom" id="topicTitle" placeholder="Titel / Frage" required></div>
+                    <div class="mb-3"><input type="text" class="input-custom" id="topicTitle" placeholder="Titel / Fürage" required></div>
                     <div class="mb-3"><textarea class="input-custom" id="topicContent" rows="3" placeholder="Beitrag..." required></textarea></div>
                     <button type="submit" class="btn btn-custom-sub w-100">Veröffentlichen</button>
                 </form>
@@ -673,7 +939,7 @@
                             <option value="Allgemeines">Allgemeines</option>
                         </select>
                     </div>
-                    <div class="mb-3"><input type="text" class="input-custom" id="editTopicTitle" placeholder="Titel / Frage" required></div>
+                    <div class="mb-3"><input type="text" class="input-custom" id="editTopicTitle" placeholder="Titel / Fürage" required></div>
                     <div class="mb-3"><textarea class="input-custom" id="editTopicContent" rows="3" placeholder="Beitrag..." required></textarea></div>
                     <button type="submit" class="btn btn-warning w-100 fw-bold">Speichern</button>
                 </form>
@@ -871,7 +1137,7 @@
                     </div>
                     <div class="d-flex gap-3">
                         <button type="button" class="btn btn-outline-light rounded-pill px-4 flex-grow-1" data-bs-dismiss="modal">Abbrechen</button>
-                        <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold shadow-lg flex-grow-1">ÄÄnderungen speichern</button>
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 fw-bold shadow-lg flex-grow-1">ÄÄÄnderungen speichern</button>
                     </div>
                 </form>
             </div>
@@ -987,13 +1253,13 @@
         </div>
     </div>
 
-    <!-- MODAL: Namensänderung BEANTRAGEN -->
+    <!-- MODAL: NamensäÄnderung BEANTRAGEN -->
     <div class="modal fade" id="usernameChangeModal" tabindex="-1" style="z-index: 1060;">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content text-white p-4 rounded-4 text-center border" style="background: rgba(9, 9, 11, 0.98) !important; border-color: rgba(197, 160, 26, 0.5) !important;">
                 <i class="bi bi-person-gear mb-2" style="font-size: 3.5rem; color: var(--brand-gold);"></i>
-                <h4 class="fw-bold text-uppercase mt-2" style="color: var(--brand-gold);">Namensänderung</h4>
-                <p class="mb-4 mt-3 text-light">Bitte gib deinen gewünschten neuen Benutzernamen ein. Die ÄÄnderung muss von einem Admin genehmigt werden.</p>
+                <h4 class="fw-bold text-uppercase mt-2" style="color: var(--brand-gold);">NamensäÄnderung</h4>
+                <p class="mb-4 mt-3 text-light">Bitte gib deinen gewünschten neuen Benutzernamen ein. Die ÄÄÄnderung muss von einem Admin genehmigt werden.</p>
                 <input type="text" id="newUsernameInput" class="input-custom mb-4 text-center fs-5" placeholder="Neuer Username">
                 <div class="d-flex gap-3 justify-content-center">
                     <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Abbrechen</button>
@@ -1002,6 +1268,169 @@
             </div>
         </div>
     </div>
+
+            <!-- VIEW: MARKET -->
+        <section id="view-market" class="app-view container py-5" style="margin-top: 80px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-uppercase fw-bold m-0" style="color: var(--brand-gold);"><i class="bi bi-cart-fill me-2"></i>Flohmarkt</h2>
+                <button class="btn rounded-pill px-4 fw-bold shadow-lg text-dark" style="background: var(--brand-gold);" onclick="document.getElementById('createMarketForm').reset(); new bootstrap.Modal(document.getElementById('createMarketModal')).show();">
+                    <i class="bi bi-plus-circle-fill me-2"></i>Neues Inserat
+                </button>
+            </div>
+            
+            <div class="d-flex gap-3 mb-4 overflow-auto pb-2" id="market-categories">
+                <button class="btn btn-outline-warning rounded-pill active" onclick="filterMarket('Alle')">Alle</button>
+                <button class="btn btn-outline-warning rounded-pill" onclick="filterMarket('Fahrzeug')">Fahrzeuge</button>
+                <button class="btn btn-outline-warning rounded-pill" onclick="filterMarket('Teile')">Teile</button>
+                <button class="btn btn-outline-warning rounded-pill" onclick="filterMarket('Kleidung')">Kleidung</button>
+                <button class="btn btn-outline-warning rounded-pill" onclick="filterMarket('Sonstiges')">Sonstiges</button>
+            </div>
+
+            <div class="row g-4" id="marketGrid"></div>
+        </section>
+
+        <!-- CREATE MARKET MODAL -->
+        <div class="modal fade" id="createMarketModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-white border-warning">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-warning fw-bold">Neues Inserat erstellen</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="createMarketForm">
+                            <div class="mb-3">
+                                <label class="form-label text-warning">Titel *</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" id="marketTitle" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-warning">Kategorie *</label>
+                                    <select class="form-select bg-dark text-white border-secondary" id="marketCategory" required onchange="toggleMobileLink()">
+                                        <option value="Fahrzeug">Fahrzeug</option>
+                                        <option value="Teile">Teile</option>
+                                        <option value="Kleidung">Kleidung</option>
+                                        <option value="Sonstiges">Sonstiges</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-warning">Preis (€) *</label>
+                                    <input type="number" class="form-control bg-dark text-white border-secondary" id="marketPrice" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-warning">Beschreibung *</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" id="marketDescription" rows="4" required></textarea>
+                            </div>
+                            
+                            <h6 class="text-warning mt-4">Links (Optional)</h6>
+                            <div class="mb-3">
+                                <input type="url" class="form-control bg-dark text-white border-secondary" id="marketLinkEbay" placeholder="eBay / Kleinanzeigen Link">
+                            </div>
+                            <div class="mb-3">
+                                <input type="url" class="form-control bg-dark text-white border-secondary" id="marketLinkFb" placeholder="Facebook Marketplace Link">
+                            </div>
+                            <div class="mb-3" id="mobileLinkContainer">
+                                <input type="url" class="form-control bg-dark text-white border-secondary" id="marketLinkMobile" placeholder="mobile.de Link">
+                            </div>
+
+                            <h6 class="text-warning mt-4">Bilder (Mindestens 1) *</h6>
+                            <div class="mb-3">
+                                <input class="form-control bg-dark text-white border-secondary" type="file" id="marketImages" accept="image/*" multiple required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-warning fw-bold text-dark" onclick="submitMarketItem()">Inserat aufgeben</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- EDIT MARKET MODAL -->
+        <div class="modal fade" id="editMarketModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content bg-dark text-white border-warning">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-warning fw-bold">Inserat bearbeiten</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editMarketForm">
+                            <input type="hidden" id="editMarketId">
+                            <div class="mb-3">
+                                <label class="form-label text-warning">Titel *</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" id="editMarketTitle" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-warning">Kategorie *</label>
+                                    <select class="form-select bg-dark text-white border-secondary" id="editMarketCategory" required onchange="toggleEditMobileLink()">
+                                        <option value="Fahrzeug">Fahrzeug</option>
+                                        <option value="Teile">Teile</option>
+                                        <option value="Kleidung">Kleidung</option>
+                                        <option value="Sonstiges">Sonstiges</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label text-warning">Preis (€) *</label>
+                                    <input type="number" class="form-control bg-dark text-white border-secondary" id="editMarketPrice" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-warning">Beschreibung *</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" id="editMarketDescription" rows="4" required></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-warning fw-bold text-dark" onclick="saveMarketEdit()">ÄÄnderungen speichern</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODERATION REASON MODAL -->
+        <div class="modal fade" id="moderationReasonModal" tabindex="-1" style="z-index: 1065;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark text-white border-danger">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Moderation: Begründung erforderlich</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Da du als Moderator ein Inserat eines anderen Users bearbeitest oder löschst, ist eine Begründung zwingend erforderlich. Der User wird darüber benachrichtigt.</p>
+                        <textarea id="moderationReasonInput" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Grund für die Moderation (z.B. Verstoß gegen Regeln...)"></textarea>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-danger fw-bold" onclick="confirmModerationAction()">Bestätigen & Ausführen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- APPEAL REASON MODAL -->
+        <div class="modal fade" id="appealReasonModal" tabindex="-1" style="z-index: 1065;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark text-white border-info">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title text-info fw-bold"><i class="bi bi-shield-exclamation me-2"></i>Einspruch einlegen</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Dein Inserat wurde von einem Moderator bearbeitet oder gelöscht. Wenn du damit nicht einverstanden bist, kannst du hier Einspruch einlegen. Das Admin-Team wird den Fall prüfen.</p>
+                        <textarea id="appealReasonInput" class="form-control bg-dark text-white border-secondary" rows="3" placeholder="Begründe deinen Einspruch..."></textarea>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-info text-dark fw-bold" onclick="submitAppeal()">Einspruch absenden</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </main>
     <footer>
@@ -1021,9 +1450,14 @@
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="market.js"></script>
+    <script src="crew.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
+
+
+
 
 
 
