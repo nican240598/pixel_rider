@@ -1,0 +1,17 @@
+{
+  "name": "Pixel Rider Community",
+  "short_name": "Pixel Rider",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#c5a01a",
+  "description": "Die Community App für Motorradfahrer",
+  "icons": [
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+

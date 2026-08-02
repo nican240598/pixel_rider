@@ -1483,3 +1483,20 @@ footer {
 }
 
 
+
+/* Profil Tabs Styling */
+#profileTabs .nav-link {
+    color: var(--text-white) !important;
+    background: transparent !important;
+    border: none;
+    border-bottom: 2px solid transparent !important;
+}
+#profileTabs .nav-link.active {
+    background: transparent !important;
+    color: var(--brand-purple) !important;
+    border-bottom: 2px solid var(--brand-purple) !important;
+    font-weight: bold;
+}
+#profileTabs .nav-link:hover {
+    color: var(--brand-purple-glow) !important;
+}

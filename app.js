@@ -2205,6 +2205,110 @@ async function renderProfile() {
         document.getElementById('profileTt').value = user.social_tiktok || '';
         document.getElementById('profileYt').value = user.social_youtube || '';
     }
+    
+    // Fetch user's map pin bikes
+    let { data: pin } = await db.from('map_pins').select('bike').eq('username', state.currentUser.username).maybeSingle();
+    if (pin) {
+        document.getElementById('profileMapBikes').value = pin.bike || '';
+    } else {
+        document.getElementById('profileMapBikes').value = '';
+    }
+    
+    renderMyMarketItems();
+    renderMyGarageItems();
+}
+
+async function renderMyMarketItems() {
+    const container = document.getElementById("profile-market-container");
+    if (!container) return;
+    
+    // Fetch user market items
+    let { data: items } = await db.from("market_items").select("*").eq("author", state.currentUser.username);
+    
+    if (!items || items.length === 0) {
+        container.innerHTML = "<p class=\"text-secondary text-center w-100 mt-4\">Du hast noch keine Inserate erstellt.</p>";
+        return;
+    }
+    
+    let html = "";
+    items.forEach(item => {
+        if(!allMarketItems.find(i => i.id === item.id)) allMarketItems.push(item);
+        const cover = (item.images && item.images.length > 0) ? item.images[0] : "https://via.placeholder.com/300x200?text=Kein+Bild";
+        html += `
+        <div class="col-md-6 mb-3">
+            <div class="card bg-dark text-white border-secondary h-100" style="cursor: pointer;" onclick="openMarketEditModal('${item.id}')">
+                <div class="row g-0">
+                    <div class="col-4">
+                        <img src="${cover}" class="img-fluid rounded-start h-100 object-fit-cover" alt="Item">
+                    </div>
+                    <div class="col-8">
+                        <div class="card-body py-2 pe-2 d-flex flex-column h-100 justify-content-center">
+                            <h6 class="card-title text-warning fw-bold text-truncate mb-1">${item.title}</h6>
+                            <p class="card-text mb-1 small text-truncate">${item.price}</p>
+                            <div class="mt-auto text-end">
+                                <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteMyMarketItem('${item.id}')"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+async function deleteMyMarketItem(id) {
+    if(confirm("Inserat wirklich löschen?")) {
+        await db.from("market_items").delete().eq("id", id);
+        renderMyMarketItems();
+    }
+}
+
+async function renderMyGarageItems() {
+    const container = document.getElementById("profile-garage-container");
+    if (!container) return;
+    
+    // Fetch user garage items
+    let { data: bikes } = await db.from("pixel_garage").select("*").eq("owner", state.currentUser.username);
+    
+    if (!bikes || bikes.length === 0) {
+        container.innerHTML = "<p class=\"text-secondary text-center w-100 mt-4\">Du hast noch keine Bikes in der Garage.</p>";
+        return;
+    }
+    
+    let html = "";
+    bikes.forEach(bike => {
+        if(!allGarageBikes.find(b => b.id === bike.id)) allGarageBikes.push(bike);
+        const imgs = parseGarageImages(bike);
+        const cover = (imgs && imgs.length > 0) ? imgs[0] : "https://via.placeholder.com/300x200?text=Kein+Bild";
+        html += `
+        <div class="col-md-6 mb-3">
+            <div class="card bg-dark text-white border-secondary h-100" style="min-height: 120px; cursor: pointer;" onclick="openGarageEditModal('${bike.id}', false)">
+                <div class="row g-0 h-100">
+                    <div class="col-5">
+                        <img src="${cover}" class="img-fluid rounded-start h-100 w-100 object-fit-cover" alt="Bike">
+                    </div>
+                    <div class="col-7">
+                        <div class="card-body py-2 pe-2 d-flex flex-column h-100 justify-content-center">
+                            <h6 class="card-title text-purple-glow fw-bold text-truncate mb-1">${bike.model}</h6>
+                            <p class="card-text mb-1 small text-truncate text-secondary">${bike.mods || 'Keine Umbauten'}</p>
+                            <div class="mt-auto text-end">
+                                <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteMyGarageItem('${bike.id}')"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+async function deleteMyGarageItem(id) {
+    if(confirm("Bike wirklich löschen?")) {
+        await db.from("pixel_garage").delete().eq("id", id);
+        renderMyGarageItems();
+    }
 }
 
 async function saveProfile(e) {
@@ -2218,6 +2322,7 @@ async function saveProfile(e) {
     const ig = document.getElementById('profileIg').value.trim();
     const tt = document.getElementById('profileTt').value.trim();
     const yt = document.getElementById('profileYt').value.trim();
+    const mapBikes = document.getElementById('profileMapBikes').value.trim();
 
     const updates = { email, social_ig: ig, social_tiktok: tt, social_youtube: yt };
 
@@ -2226,6 +2331,13 @@ async function saveProfile(e) {
     }
 
     const { error } = await db.from('users').update(updates).eq('username', state.currentUser.username);
+    
+    // Update map pin bikes if a pin exists
+    let { data: existingPin } = await db.from('map_pins').select('id').eq('username', state.currentUser.username).maybeSingle();
+    if (existingPin) {
+        await db.from('map_pins').update({ bike: mapBikes }).eq('username', state.currentUser.username);
+        loadMapPins(); // reload map markers in background
+    }
     
     btn.innerHTML = '<i class="bi bi-save me-2"></i> Profil Speichern';
     btn.disabled = false;
@@ -3101,6 +3213,9 @@ document.getElementById('crewImageInput')?.addEventListener('change', async func
         showCustomAlert('Fehler beim Komprimieren des Bildes', 'Fehler', 'danger');
     }
 });
+
+
+
 
 
 
