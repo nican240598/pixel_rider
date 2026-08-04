@@ -1,10 +1,12 @@
-const CACHE_NAME = 'pixel-rider-cache-v1';
+const CACHE_NAME = 'pixel-rider-cache-v2';
 const urlsToCache = [
   './',
   './index.html',
   './style.css',
   './app.js',
-  './icon-512x512.png'
+  './icon-512x512.png',
+  './mobile-optimierung.css',
+  './mobile-optimierung.js'
 ];
 
 self.addEventListener('install', event => {
@@ -16,13 +18,26 @@ self.addEventListener('install', event => {
   );
 });
 
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+});
+
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Return cache or network fetch
         return response || fetch(event.request);
       })
   );
 });
-
