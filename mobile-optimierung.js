@@ -89,7 +89,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         if(cells[1]) cells[1].setAttribute('data-label', 'Rolle');
                         if(cells[2]) cells[2].setAttribute('data-label', 'Invite');
                         if(cells[3]) cells[3].setAttribute('data-label', 'Status');
-                        if(cells[4]) cells[4].setAttribute('data-label', 'Aktion');
+                        if(cells[4]) cells[4].setAttribute('data-label', 'Zuletzt eingeloggt');
+                        if(cells[5]) cells[5].setAttribute('data-label', 'Aktion');
                     });
                 }
 
