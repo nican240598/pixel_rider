@@ -157,7 +157,7 @@
 
         <!-- VIEW 2: MEMBER DASHBOARD -->
         <section id="view-dashboard" class="app-view">
-            <h2 class="text-center text-uppercase fw-bold mb-5">Crew-<span>Mitgliederbereich</span></h2>
+            <h2 class="text-center text-uppercase fw-bold mb-5">Crew <span>Area</span></h2>
             
             <div class="row g-4 justify-content-center" id="dashboardGrid">
                 <div class="col-md-6 col-lg-4" onclick="switchView('gpx')">
@@ -394,6 +394,7 @@
                 <ul class="nav nav-tabs admin-nav-tabs justify-content-center mb-4 border-secondary" role="tablist">
                     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-invites" type="button"><i class="bi bi-key-fill me-1"></i> Invites</button></li>
                     <li class="nav-item" id="admin-tab-users"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-users" type="button"><i class="bi bi-people-fill me-1"></i> User & Rechte</button></li>
+                    <li class="nav-item" id="admin-tab-appeals"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-appeals" type="button" onclick="if(typeof loadAdminAppeals === 'function') loadAdminAppeals();"><i class="bi bi-hammer me-1"></i> Einsprüche</button></li>
                 </ul>
                 <div class="tab-content text-start">
                     <div class="tab-pane fade show active" id="tab-invites">
@@ -406,6 +407,15 @@
                     <div class="tab-pane fade" id="tab-users">
                         <h4 class="text-uppercase text-warning fw-bold mb-3">Mitglieder-Übersicht</h4>
                         <div class="table-responsive"><table class="table table-custom-glass align-middle"><thead><tr class="text-uppercase small"><th>Username</th><th>Rolle</th><th>Invite</th><th>Status</th><th>Zuletzt eingeloggt</th><th class="text-end">Aktion / Rolle ändern</th></tr></thead><tbody id="usersTableBody"></tbody></table></div>
+                    </div>
+                    <div class="tab-pane fade" id="tab-appeals">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="text-uppercase text-warning fw-bold mb-0">Offene Einsprüche</h4>
+                            <button class="btn btn-sm btn-outline-light rounded-pill" onclick="if(typeof loadAdminAppeals === 'function') loadAdminAppeals();"><i class="bi bi-arrow-clockwise"></i> Aktualisieren</button>
+                        </div>
+                        <div id="adminAppealsList">
+                            <div class="text-purple-glow fw-bold text-center py-4 fs-5">Keine offenen Einsprüche.</div>
+                        </div>
                     </div>
                 </div>
                 <div class="text-center mt-5"><button class="btn btn-outline-light rounded-pill px-4" onclick="switchView('dashboard')">Zurück zum Dashboard</button></div>
@@ -1350,7 +1360,6 @@
             </div>
 
             <div class="row g-4" id="marketGrid"></div>
-            <div class="text-center mt-5"><button class="btn btn-outline-light rounded-pill px-4" onclick="switchView('dashboard')">Zurück zum Dashboard</button></div>
         </section>
 
         <!-- CREATE MARKET MODAL -->
@@ -1602,6 +1611,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
+    <script src="crew.js"></script>
     <script src="market.js"></script>
     <script src="mobile-optimierung.js"></script>
     <script>
@@ -1615,3 +1625,20 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

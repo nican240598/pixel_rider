@@ -413,11 +413,12 @@ document.getElementById('appealReasonForm')?.addEventListener('submit', async fu
 // ADMIN APPEALS CENTER
 async function loadAdminAppeals() {
     const listEl = document.getElementById('adminAppealsList');
+    if (!listEl) return;
     listEl.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-warning"></div></div>';
     
     let { data: appeals } = await db.from('market_appeals').select('*, market_items(*)').eq('status', 'pending');
     if (!appeals || appeals.length === 0) {
-        listEl.innerHTML = '<div class="text-muted text-center py-4">Keine offenen Einsprüche.</div>';
+        listEl.innerHTML = '<div class="text-purple-glow fw-bold text-center py-4 fs-5">Keine offenen Einsprüche.</div>';
         return;
     }
 
@@ -462,12 +463,6 @@ async function resolveAppeal(appealId, resolution) {
     renderMarket();
 }
 
-// INJECT APPEALS TAB TO ADMIN CENTER
-document.addEventListener('DOMContentLoaded', () => {
-    const adminTabs = document.querySelector('.admin-nav-tabs');
-    if (adminTabs) {
-        adminTabs.innerHTML += `<li class="nav-item" id="admin-tab-appeals"><button class="nav-link" data-bs-toggle="modal" data-bs-target="#adminAppealsModal" onclick="loadAdminAppeals()" type="button"><i class="bi bi-hammer me-1"></i> Einsprüche</button></li>`;
-    }
-});
+
 
 

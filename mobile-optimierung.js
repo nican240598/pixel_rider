@@ -1,17 +1,13 @@
 // mobile-optimierung.js
 document.addEventListener("DOMContentLoaded", function() {
-
-    // 1. Navbar Funktion überschreiben (Bottom Nav + Schöne Desktop Nav)
     if (typeof window.updateNavbar !== 'undefined') {
         window.updateNavbar = function() {
             const navLinks = document.getElementById("navLinks");
             if(!navLinks) return;
-
             if (state.currentUser) {
                 let roleColor = "text-warning";
                 if (state.currentUser.isAdmin) roleColor = "text-danger";
                 else if (state.currentUser.isModerator) roleColor = "text-info";
-
                 let adminBellHtml = '';
                 if (state.currentUser.isAdmin || state.currentUser.isModerator) {
                     adminBellHtml = `
@@ -23,7 +19,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         </div>
                     `;
                 }
-
                 let userBellHtml = `
                     <div class="nav-item-mobile" onclick="openUserNotificationsModal()" title="Benachrichtigungen">
                         <i class="bi bi-bell-fill text-white position-relative">
@@ -32,7 +27,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         <span class="nav-text-mobile text-white d-md-none">News</span>
                     </div>
                 `;
-
                 let desktopCenterLinks = `
                     <div class="d-none d-lg-flex align-items-center gap-4 desktop-center-nav">
                         <span class="desktop-nav-link" onclick="switchView('dashboard')"><i class="bi bi-grid-1x2-fill"></i> Dashboard</span>
@@ -42,25 +36,20 @@ document.addEventListener("DOMContentLoaded", function() {
                         <span class="desktop-nav-link" onclick="switchView('map')"><i class="bi bi-geo-alt-fill"></i> Map</span>
                     </div>
                 `;
-
                 navLinks.innerHTML = `
                     ${desktopCenterLinks}
-                    
                     <div class="right-side-nav">
                         ${adminBellHtml}
                         ${userBellHtml}
-                        
                         <div class="nav-item-mobile ${roleColor}" onclick="switchView('profile')" title="Profil">
                             <i class="bi bi-person-circle"></i>
                             <span class="nav-text-mobile d-md-none">Profil</span>
                             <span class="d-none d-md-inline fw-bold ms-2 me-1">${state.currentUser.username}</span>
                         </div>
-                        
                         <div class="nav-item-mobile text-light d-md-none" onclick="switchView('dashboard')">
                             <i class="bi bi-grid-1x2-fill"></i>
                             <span class="nav-text-mobile">Menü</span>
                         </div>
-                        
                         <div class="nav-item-mobile text-danger" onclick="logout()" title="Logout">
                             <i class="bi bi-box-arrow-right d-md-none"></i>
                             <span class="nav-text-mobile d-md-none">Logout</span>
@@ -82,13 +71,11 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         updateNavbar();
     }
-
     document.querySelectorAll('.modal-dialog').forEach(el => {
         if(!el.classList.contains('modal-fullscreen-md-down')) {
             el.classList.add('modal-fullscreen-md-down');
         }
     });
-
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.type === 'childList') {
@@ -104,7 +91,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         if(cells[5]) cells[5].setAttribute('data-label', 'Aktion');
                     });
                 }
-
                 const invitesTable = document.getElementById('invitesTableBody');
                 if (invitesTable && invitesTable.contains(mutation.target)) {
                     invitesTable.querySelectorAll('tr').forEach(row => {
@@ -115,13 +101,11 @@ document.addEventListener("DOMContentLoaded", function() {
                         if(cells[3]) cells[3].setAttribute('data-label', 'Aktion');
                     });
                 }
-
                 document.querySelectorAll('.modal-dialog:not(.modal-fullscreen-md-down)').forEach(el => {
                     el.classList.add('modal-fullscreen-md-down');
                 });
             }
         });
     });
-
     observer.observe(document.body, { childList: true, subtree: true });
 });
