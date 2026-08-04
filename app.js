@@ -218,6 +218,11 @@ function updateDynamicBackground(viewName) {
 function switchView(viewName) {
     if (!state.currentUser && viewName !== 'landing' && viewName !== 'privacy' && viewName !== 'impressum') viewName = 'landing';
     
+    // Safety check: if user is logged in, ensure presence/panels are active
+    if (state.currentUser && (!presenceChannel || document.getElementById('onlineUsersSidebar')?.classList.contains('d-none'))) {
+        initPresence();
+    }
+    
     document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
     updateDynamicBackground(viewName);
 
@@ -2465,13 +2470,20 @@ function initPresence() {
     initGlobalChatListener();
     renderUpcomingEventsSidebar();
     if (!state.currentUser) return;
-    
 
+    // Show the sidebar and toggle explicitly
+    const sidebar = document.getElementById('onlineUsersSidebar');
+    if (sidebar) sidebar.classList.remove('d-none');
     
-    // Show the sidebar and toggle
-    document.getElementById('onlineUsersSidebar')?.classList.remove('d-none');
-    document.getElementById('onlineSidebarToggle')?.classList.remove('d-none');
-    document.getElementById('onlineSidebarToggle')?.classList.add('d-md-none');
+    const toggleBtn = document.getElementById('onlineSidebarToggle');
+    if (toggleBtn) {
+        toggleBtn.classList.remove('d-none');
+        toggleBtn.classList.add('d-md-none');
+    }
+
+    if (presenceChannel) {
+        presenceChannel.unsubscribe();
+    }
 
     if (presenceChannel) {
         presenceChannel.unsubscribe();
