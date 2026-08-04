@@ -678,6 +678,8 @@ document.getElementById("modalLoginForm")?.addEventListener("submit", async func
         };
         localStorage.setItem("app_user", JSON.stringify(state.currentUser));
         db.from('users').update({ last_login: new Date().toISOString() }).eq('username', user.username).then();
+        
+        initPresence(); // <--- Zwingt das Laden des Panels
         hideModal("authModal");
 
         const resetHash = await hashPassword("1234");
