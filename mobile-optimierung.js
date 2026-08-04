@@ -59,7 +59,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 `;
                 if (state.currentUser.isAdmin || state.currentUser.isModerator) checkAdminNotifications();
                 checkUserNotifications();
+                
+                // NEU: Polling alle 3 Sekunden für Live-Benachrichtigungen
+                if (window.navBadgeInterval) clearInterval(window.navBadgeInterval);
+                window.navBadgeInterval = setInterval(() => {
+                    if (typeof state !== 'undefined' && state.currentUser) {
+                        if (state.currentUser.isAdmin || state.currentUser.isModerator) checkAdminNotifications();
+                        checkUserNotifications();
+                    }
+                }, 3000);
             } else {
+                if (window.navBadgeInterval) clearInterval(window.navBadgeInterval);
                 navLinks.innerHTML = `
                     <div class="nav-item-mobile text-white w-100 justify-content-center px-3" onclick="showModal('authModal')">
                         <i class="bi bi-box-arrow-in-right d-md-none fs-4"></i>
