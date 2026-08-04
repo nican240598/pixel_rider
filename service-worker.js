@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pixel-rider-cache-v4';
+const CACHE_NAME = 'pixel-rider-cache-v5';
 const urlsToCache = [
   './',
   './index.html',
