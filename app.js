@@ -2,7 +2,7 @@
    1. SUPABASE KONFIGURATION & INIT
    ========================================= */
 const SUPABASE_URL = 'https://anxhzeovqgokcorvjttu.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_F9C_e_QstTeAnI21JZ-pCQ_ZSwCCznr'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueGh6ZW92cWdva2NvcnZqdHR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNTQ2MzQsImV4cCI6MjEwMDczMDYzNH0.cNXVM4y6_uCnHP6r53ZmqqSRQX2oLwk78fSPW9x0FJ4'; 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 
