@@ -248,8 +248,8 @@ function updateNavbar() {
     const navLinks = document.getElementById("navLinks");
     if(!navLinks) return;
     
-    // Gibt dem Container die volle Breite und verteilt die 3 Bereiche perfekt (Links, Mitte, Rechts)
-    navLinks.className = "d-flex align-items-center w-100 px-3";
+    // GIBT DEM CONTAINER DIE VOLLE BREITE UND VERTEILT DIE 3 BEREICHE PERFEKT
+    navLinks.className = "d-flex align-items-center flex-grow-1 justify-content-between ms-4";
     
     if (state.currentUser) {
         let roleColor = "text-warning"; 
@@ -277,7 +277,7 @@ function updateNavbar() {
 
         navLinks.innerHTML = `
             <!-- 1. Menü Links (Links bündig) -->
-            <div class="d-none d-xl-flex align-items-center gap-2" style="flex: 1; justify-content: flex-start;">
+            <div class="d-none d-xl-flex align-items-center gap-1">
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'dashboard' ? 'active' : ''}" onclick="switchView('dashboard')"><i class="bi bi-grid-fill me-1"></i>Dashboard</button>
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'garage' ? 'active' : ''}" onclick="switchView('garage')"><i class="bi bi-tools me-1"></i>Garage</button>
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'forum' ? 'active' : ''}" onclick="switchView('forum')"><i class="bi bi-chat-quote me-1"></i>Forum</button>
@@ -285,22 +285,35 @@ function updateNavbar() {
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'map' ? 'active' : ''}" onclick="switchView('map')"><i class="bi bi-geo-alt me-1"></i>Map</button>
             </div>
 
-            <!-- 2. Ticker (Mittig) -->
-            <div class="d-none d-lg-flex align-items-center justify-content-center" style="flex: 2;">
+            <!-- 2. Ticker & Online (Zentriert) -->
+            <div class="d-none d-lg-flex align-items-center gap-3">
+                
+                <!-- Event Liveticker -->
                 <div class="nav-event-ticker" onclick="switchView('events')">
-                    <i class="bi bi-lightning-charge-fill text-warning me-2 fs-5"></i>
-                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; width: 100%;">
-                        <span id="navEventTickerText" class="text-white fw-bold text-uppercase" style="font-size: 0.95rem; letter-spacing: 0.5px;">Lade Events...</span>
+                    <i class="bi bi-lightning-charge-fill text-warning me-2"></i>
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">
+                        <span id="navEventTickerText" class="text-white fw-bold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Lade Events...</span>
+                    </div>
+                </div>
+
+                <!-- Online Counter & Dropdown -->
+                <div class="nav-online-counter position-relative" onclick="document.getElementById('onlineDropdown').classList.toggle('show')">
+                    <i class="bi bi-people-fill text-warning me-1"></i>
+                    <span class="text-white fw-bold text-uppercase" style="font-size: 0.85rem;">Pixel Rider Online: <span id="navOnlineCount" class="text-success ms-1">0</span></span>
+                    
+                    <div id="onlineDropdown" class="nav-dropdown d-none text-start" onclick="event.stopPropagation();">
+                        <div class="border-bottom border-secondary pb-2 mb-2">
+                            <h6 class="text-warning mb-0 text-uppercase fw-bold"><i class="bi bi-broadcast me-2"></i>Crew Online</h6>
+                        </div>
+                        <div id="navOnlineUsersList" class="dropdown-list" style="max-height: 300px; overflow-y: auto;"></div>
                     </div>
                 </div>
             </div>
 
             <!-- 3. Profil & Benachrichtigungen (Rechts bündig) -->
-            <div class="d-flex align-items-center gap-4" style="flex: 1; justify-content: flex-end;">
-                <div class="d-flex align-items-center gap-3">
-                    ${adminBellHtml}
-                    ${userBellHtml}
-                </div>
+            <div class="d-flex align-items-center gap-3">
+                ${adminBellHtml}
+                ${userBellHtml}
                 <span class="${roleColor} fw-bold user-role-badge" style="cursor:pointer;" onclick="switchView('profile')" title="Profil bearbeiten"><i class="bi bi-person-circle me-1"></i>${state.currentUser.username}</span>
                 <button class="btn-logout" onclick="logout()">Logout</button>
             </div>
@@ -311,34 +324,9 @@ function updateNavbar() {
         // Zwingt die App, die Daten sofort wieder in die neue Leiste zu laden
         if (typeof updateEventsCountdownUI === 'function') updateEventsCountdownUI();
         if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
-
-        // Schwimmendes Online Panel für unten rechts erstellen
-        let floatingOnline = document.getElementById("floatingOnlineCounter");
-        if (!floatingOnline) {
-            floatingOnline = document.createElement("div");
-            floatingOnline.id = "floatingOnlineCounter";
-            floatingOnline.className = "floating-online-counter d-none d-lg-block";
-            floatingOnline.innerHTML = `
-                <div class="nav-online-counter position-relative" onclick="document.getElementById('onlineDropdown').classList.toggle('show')">
-                    <i class="bi bi-people-fill text-warning me-2 fs-5"></i>
-                    <span class="text-white fw-bold text-uppercase" style="font-size: 0.95rem;">Pixel Rider Online: <span id="navOnlineCount" class="text-success ms-1">0</span></span>
-                    
-                    <div id="onlineDropdown" class="nav-dropdown dropup d-none text-start" onclick="event.stopPropagation();">
-                        <div class="border-bottom border-secondary pb-2 mb-2">
-                            <h6 class="text-warning mb-0 text-uppercase fw-bold"><i class="bi bi-broadcast me-2"></i>Crew Online</h6>
-                        </div>
-                        <div id="navOnlineUsersList" class="dropdown-list" style="max-height: 300px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(floatingOnline);
-            if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
-        }
         
     } else {
-        navLinks.innerHTML = `<button class="custom-nav-link border-0 bg-transparent ms-auto" onclick="showModal('authModal')">Login / Registrieren</button>`;
-        const floatingOnline = document.getElementById("floatingOnlineCounter");
-        if (floatingOnline) floatingOnline.remove();
+        navLinks.innerHTML = `<button class="custom-nav-link border-0 bg-transparent" onclick="showModal('authModal')">Login / Registrieren</button>`;
     }
 }
 
@@ -2969,9 +2957,9 @@ function updateEventsCountdownUI() {
             let m = Math.floor((diff / 1000 / 60) % 60);
             let pad = (num) => String(num).padStart(2, '0');
             let timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m);
-            tickerHtml = `<span class="text-warning me-1">NEXT RIDE:</span> ${escapeHTML(nextEv.title)} <span class="text-muted ms-2" style="font-weight: 500;">START IN ${timeStr}</span>`;
+            tickerHtml = `<span class="text-warning fw-bold me-1">NEXT RIDE:</span> <span class="text-white fw-bold fs-6">${escapeHTML(nextEv.title)}</span> <span class="badge bg-dark border border-secondary text-light ms-2">IN ${timeStr}</span>`;
         } else {
-            tickerHtml = `<span class="text-danger me-1">LIVE:</span> ${escapeHTML(nextEv.title)} <span class="text-success ms-2" style="font-weight: 500;">LÄUFT JETZT!</span>`;
+            tickerHtml = `<span class="text-danger fw-bold me-1">LIVE:</span> <span class="text-white fw-bold fs-6">${escapeHTML(nextEv.title)}</span> <span class="badge bg-success text-white ms-2">LÄUFT JETZT!</span>`;
         }
         
     } else {
@@ -3050,17 +3038,22 @@ async function loadCrewMembers() {
             }
 
             html += `
-                <div class="col-md-6 col-lg-4 col-xl-3">
-                    <div class="card bg-dark border-secondary h-100 text-center" style="box-shadow: 0 0 15px rgba(255,215,0,0.1);">
-                        <div class="card-img-top overflow-hidden" style="height: 250px;">
-                            <img src="${imgSrc}" class="w-100 h-100 object-fit-cover" alt="${escapeHTML(member.name)}" loading="lazy">
-                        </div>
-                        <div class="card-body d-flex flex-column">
-                            <h4 class="card-title text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h4>
-                            <h6 class="text-light mb-3">${escapeHTML(member.role)}</h6>
-                            <p class="card-text text-muted small flex-grow-1">${escapeHTML(member.bio || '')}</p>
-                            <div class="mt-3">
-                                ${socialLinks}
+                <div class="col-6 col-md-6 col-lg-4 col-xl-4 mb-3 d-flex justify-content-center">
+                    <div class="crew-flip-card w-100" style="max-width: 375px;" onclick="this.classList.toggle('flipped')">
+                        <div class="crew-flip-card-inner">
+                            <div class="crew-flip-card-front card bg-dark border-secondary">
+                                <img src="${imgSrc}" class="w-100 h-100 object-fit-cover position-absolute top-0 start-0" alt="${escapeHTML(member.name)}" loading="lazy" style="opacity: 0.7;">
+                                <div class="position-absolute bottom-0 w-100 p-2 text-center" style="background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
+                                    <h6 class="card-title text-warning fw-bold mb-0 text-truncate" style="font-size: 18px;">${escapeHTML(member.name)}</h6>
+                                    <small class="text-white text-truncate d-block">${escapeHTML(member.role)}</small>
+                                </div>
+                            </div>
+                            <div class="crew-flip-card-back position-relative" style="background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('${imgSrc}'); background-size: cover; background-position: center;">
+                                <h6 class="text-warning fw-bold mb-2 text-center" style="font-size: 18px;">${escapeHTML(member.name)}</h6>
+                                <p class="text-light fw-bold mb-0 text-center px-2">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</p>
+                                <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 d-flex justify-content-center gap-2">
+                                    ${socialLinks}
+                                </div>
                             </div>
                         </div>
                     </div>
