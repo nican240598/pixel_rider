@@ -2969,7 +2969,7 @@ function updateEventsCountdownUI() {
             let m = Math.floor((diff / 1000 / 60) % 60);
             let pad = (num) => String(num).padStart(2, '0');
             let timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m);
-            // HIER IST DIE SCHRIFT JETZT WEISS OHNE BADGE
+            // HIER IST DIE SCHRIFT JETZT WEISS
             tickerHtml = `<span class="text-warning fw-bold me-2">NEXT RIDE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="text-white fw-bold" style="letter-spacing: 1px;"><i class="bi bi-clock-history text-warning me-1"></i> START IN ${timeStr}</span>`;
         } else {
             tickerHtml = `<span class="text-danger fw-bold me-2">LIVE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="text-white fw-bold" style="letter-spacing: 1px;"><i class="bi bi-broadcast text-danger me-1"></i> LÄUFT JETZT!</span>`;
@@ -3050,32 +3050,38 @@ async function loadCrewMembers() {
                 socialLinks += `<a href="${member.social_youtube}" target="_blank" class="text-danger fs-5 mx-1" onclick="event.stopPropagation();"><i class="bi bi-youtube"></i></a>`;
             }
 
-            // PERFEKT ABGESTIMMTE FLIP-CARDS (Front: Bild Top, bg-dark unten)
+            // KUGELSICHERE INLINE-FLIP-CARDS (Kein Bootstrap-Einfluss mehr möglich!)
             html += `
                 <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4 d-flex justify-content-center">
-                    <div class="crew-flip-card w-100" style="max-width: 280px; height: 420px; aspect-ratio: auto;" onclick="this.classList.toggle('flipped')">
-                        <div class="crew-flip-card-inner h-100">
+                    <div style="width: 100%; max-width: 280px; height: 420px; perspective: 1000px; cursor: pointer;" 
+                         onclick="const inner = this.querySelector('.crew-flip-card-inner'); inner.style.transform = inner.style.transform === 'rotateY(180deg)' ? 'rotateY(0deg)' : 'rotateY(180deg)';">
+                        
+                        <!-- INNER CONTAINER -->
+                        <div class="crew-flip-card-inner" style="position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d;">
+                            
                             <!-- FRONT -->
-                            <div class="crew-flip-card-front card border-secondary h-100 text-center" style="background-color: #212529;">
-                                <div class="card-img-top overflow-hidden" style="height: 240px; flex-shrink: 0;">
-                                    <img src="${imgSrc}" class="w-100 h-100 object-fit-cover" alt="${escapeHTML(member.name)}" loading="lazy">
+                            <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; background-color: #212529; border: 1px solid rgba(197, 160, 26, 0.3); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                                <div style="width: 100%; height: 240px; flex-shrink: 0;">
+                                    <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" alt="${escapeHTML(member.name)}" loading="lazy">
                                 </div>
-                                <div class="card-body d-flex flex-column align-items-center pb-3">
-                                    <h5 class="card-title text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h5>
+                                <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 15px;">
+                                    <h5 class="text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h5>
                                     <h6 class="text-light mb-auto" style="font-size: 0.9rem;">${escapeHTML(member.role)}</h6>
-                                    <div class="mt-auto w-100 d-flex justify-content-center gap-3">
+                                    <div style="margin-top: auto; display: flex; gap: 15px;">
                                         ${socialLinks}
                                     </div>
                                 </div>
                             </div>
+                            
                             <!-- BACK -->
-                            <div class="crew-flip-card-back h-100" style="background: linear-gradient(rgba(20,20,25,0.95), rgba(20,20,25,0.95)), url('${imgSrc}') center/cover;">
-                                <h5 class="text-warning fw-bold mb-3 text-uppercase">${escapeHTML(member.name)}</h5>
-                                <p class="text-light small text-center flex-grow-1 overflow-auto w-100 px-2 m-0" style="max-height: 250px;">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</p>
-                                <div class="d-flex justify-content-center gap-3 mt-auto w-100 pt-3 border-top border-secondary">
+                            <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: rotateY(180deg); background-color: #212529; border: 1px solid rgba(197, 160, 26, 0.6); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                                <h5 class="text-warning fw-bold text-uppercase text-center mb-3 border-bottom border-secondary pb-2">${escapeHTML(member.name)}</h5>
+                                <div class="text-light small text-center overflow-auto" style="flex-grow: 1; white-space: pre-wrap; word-break: break-word;">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</div>
+                                <div class="border-top border-secondary pt-3 mt-3 d-flex justify-content-center gap-3">
                                     ${socialLinks}
                                 </div>
                             </div>
+                            
                         </div>
                     </div>
                 </div>
