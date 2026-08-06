@@ -248,97 +248,41 @@ function updateNavbar() {
     const navLinks = document.getElementById("navLinks");
     if(!navLinks) return;
     
-    // Gibt dem Container die volle Breite und verteilt die 3 Bereiche perfekt (Links, Mitte, Rechts)
-    navLinks.className = "d-flex align-items-center w-100 px-3";
-    
     if (state.currentUser) {
         let roleColor = "text-warning"; 
         if (state.currentUser.isAdmin) roleColor = "text-danger"; 
         else if (state.currentUser.isModerator) roleColor = "text-info"; 
 
-        // Admin Glocke
+        // Admin/Mod Bell (für Passwort-Resets & Invite-Anfragen)
         let adminBellHtml = '';
         if (state.currentUser.isAdmin || state.currentUser.isModerator) {
             adminBellHtml = `
-                <div class="position-relative" style="cursor: pointer;" onclick="openPasswordResetsModal()" title="Admin-Benachrichtigungen">
+                <div class="position-relative me-1" style="cursor: pointer;" onclick="openPasswordResetsModal()" title="Admin-Benachrichtigungen">
                     <i class="bi bi-shield-shaded text-warning fs-5"></i>
                     <span id="adminBellBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.6rem;">0</span>
                 </div>
             `;
         }
 
-        // User Glocke
+        // User Bell (für ALLE User - Benachrichtigungen z.B. von Mod-Aktionen)
         let userBellHtml = `
-            <div class="position-relative" style="cursor: pointer;" onclick="openUserNotificationsModal()" title="Deine Benachrichtigungen">
+            <div class="position-relative me-3" style="cursor: pointer;" onclick="openUserNotificationsModal()" title="Deine Benachrichtigungen">
                 <i class="bi bi-bell-fill text-white fs-5"></i>
                 <span id="userBellBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.6rem;">0</span>
             </div>
         `;
 
         navLinks.innerHTML = `
-            <!-- 1. Menü Links (Links bündig) -->
-            <div class="d-none d-xl-flex align-items-center gap-2" style="flex: 1; justify-content: flex-start;">
-                <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'dashboard' ? 'active' : ''}" onclick="switchView('dashboard')"><i class="bi bi-grid-fill me-1"></i>Dashboard</button>
-                <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'garage' ? 'active' : ''}" onclick="switchView('garage')"><i class="bi bi-tools me-1"></i>Garage</button>
-                <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'forum' ? 'active' : ''}" onclick="switchView('forum')"><i class="bi bi-chat-quote me-1"></i>Forum</button>
-                <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'events' ? 'active' : ''}" onclick="switchView('events')"><i class="bi bi-calendar-event me-1"></i>Events</button>
-                <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'map' ? 'active' : ''}" onclick="switchView('map')"><i class="bi bi-geo-alt me-1"></i>Map</button>
-            </div>
-
-            <!-- 2. Ticker (Mittig) -->
-            <div class="d-none d-lg-flex align-items-center justify-content-center" style="flex: 2;">
-                <div class="nav-event-ticker" onclick="switchView('events')">
-                    <i class="bi bi-lightning-charge-fill text-warning me-2 fs-5"></i>
-                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; width: 100%;">
-                        <span id="navEventTickerText" class="text-white fw-bold text-uppercase" style="font-size: 0.95rem; letter-spacing: 0.5px;">Lade Events...</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. Profil & Benachrichtigungen (Rechts bündig) -->
-            <div class="d-flex align-items-center gap-4" style="flex: 1; justify-content: flex-end;">
-                <div class="d-flex align-items-center gap-3">
-                    ${adminBellHtml}
-                    ${userBellHtml}
-                </div>
-                <span class="${roleColor} fw-bold user-role-badge" style="cursor:pointer;" onclick="switchView('profile')" title="Profil bearbeiten"><i class="bi bi-person-circle me-1"></i>${state.currentUser.username}</span>
-                <button class="btn-logout" onclick="logout()">Logout</button>
-            </div>
+            ${adminBellHtml}
+            ${userBellHtml}
+            <span class="${roleColor} fw-bold me-3 user-role-badge" style="cursor:pointer;" onclick="switchView('profile')" title="Profil bearbeiten"><i class="bi bi-person-circle me-1"></i>${state.currentUser.username}</span>
+            <button class="custom-nav-link border-0 bg-transparent" onclick="switchView('dashboard')">Dashboard</button>
+            <button class="btn-logout ms-2" onclick="logout()">Logout</button>
         `;
         if (state.currentUser.isAdmin || state.currentUser.isModerator) checkAdminNotifications();
         checkUserNotifications();
-        
-        // Zwingt die App, die Daten sofort wieder in die neue Leiste zu laden
-        if (typeof updateEventsCountdownUI === 'function') updateEventsCountdownUI();
-        if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
-
-        // Schwimmendes Online Panel für unten rechts erstellen
-        let floatingOnline = document.getElementById("floatingOnlineCounter");
-        if (!floatingOnline) {
-            floatingOnline = document.createElement("div");
-            floatingOnline.id = "floatingOnlineCounter";
-            floatingOnline.className = "floating-online-counter d-none d-lg-block";
-            floatingOnline.innerHTML = `
-                <div class="nav-online-counter position-relative" onclick="document.getElementById('onlineDropdown').classList.toggle('show')">
-                    <i class="bi bi-people-fill text-warning me-2 fs-5"></i>
-                    <span class="text-white fw-bold text-uppercase" style="font-size: 0.95rem;">Pixel Rider Online: <span id="navOnlineCount" class="text-success ms-1">0</span></span>
-                    
-                    <div id="onlineDropdown" class="nav-dropdown dropup d-none text-start" onclick="event.stopPropagation();">
-                        <div class="border-bottom border-secondary pb-2 mb-2">
-                            <h6 class="text-warning mb-0 text-uppercase fw-bold"><i class="bi bi-broadcast me-2"></i>Crew Online</h6>
-                        </div>
-                        <div id="navOnlineUsersList" class="dropdown-list" style="max-height: 300px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(floatingOnline);
-            if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
-        }
-        
     } else {
-        navLinks.innerHTML = `<button class="custom-nav-link border-0 bg-transparent ms-auto" onclick="showModal('authModal')">Login / Registrieren</button>`;
-        const floatingOnline = document.getElementById("floatingOnlineCounter");
-        if (floatingOnline) floatingOnline.remove();
+        navLinks.innerHTML = `<button class="custom-nav-link border-0 bg-transparent" onclick="showModal('authModal')">Login / Registrieren</button>`;
     }
 }
 
@@ -631,10 +575,8 @@ function renderDashboardCards() {
             col.innerHTML = `
                 <div class="feature-card admin-card-large">
                     <i class="bi bi-shield-lock-fill feature-icon text-warning"></i>
-                    <div class="feature-card-text">
-                        <h3 class="text-warning text-uppercase fw-bold mb-2 display-6">Admin & Moderator Center</h3>
-                        <p class="card-description fs-5 text-light">Verwalte Invite-Codes und User-Rechte über die Cloud.</p>
-                    </div>
+                    <h3 class="text-warning text-uppercase fw-bold mb-2 display-6">Admin & Moderator Center</h3>
+                    <p class="card-description fs-5 text-light">Verwalte Invite-Codes und User-Rechte über die Cloud.</p>
                 </div>
             `;
             grid.prepend(col);
@@ -804,13 +746,7 @@ document.getElementById("forgotPasswordForm")?.addEventListener("submit", async 
 });
 
 function logout() {
-    stopPresence(); 
-    state.currentUser = null; 
-    localStorage.removeItem("app_user"); 
-    const floatingOnline = document.getElementById("floatingOnlineCounter");
-    if (floatingOnline) floatingOnline.remove();
-    switchView('landing'); 
-}
+    stopPresence(); state.currentUser = null; localStorage.removeItem("app_user"); switchView('landing'); }
 
 /* =========================================
    4. ADMIN PANEL
@@ -2589,42 +2525,32 @@ function stopPresence() {
 
 function renderOnlineUsers() {
     const presenceState = currentPresenceState;
-    const listEl = document.getElementById('onlineUsersList'); // Für Mobile Sidebar
-    const dropListEl = document.getElementById('navOnlineUsersList'); // Für Desktop Dropdown
+    const listEl = document.getElementById('onlineUsersList');
+    if (!listEl) return;
     
-    let html = '';
+    listEl.innerHTML = '';
     let count = 0;
     
+    // presenceState is an object where keys are the presence keys (usernames)
     for (const username in presenceState) {
         count++;
+        // We just take the first connection if a user has multiple tabs
+        const userPresence = presenceState[username][0];
+        
+        const item = document.createElement('div');
+        item.className = 'online-user-item';
+        item.style.cursor = 'pointer';
         let badgeHtml = '';
         if (unreadDirectMessages[username] > 0) {
             badgeHtml = '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">' + unreadDirectMessages[username] + '</span>';
         }
-        html += `
-        <div class="online-user-item mb-2 p-2 rounded" style="background: rgba(255,255,255,0.05); cursor:pointer;">
-            <div class="d-flex w-100 justify-content-between align-items-center">
-                <div class="d-flex align-items-center flex-grow-1" onclick="showPublicProfile('${escapeHTML(username)}')">
-                    <div class="online-indicator" style="width:8px; height:8px; border-radius:50%; background:#28a745; margin-right:10px; box-shadow:0 0 8px #28a745;"></div>
-                    <span class="text-white fw-bold">${escapeHTML(username)}</span>
-                </div>
-                <button class="btn btn-sm btn-link text-warning p-0 ms-2 position-relative" onclick="event.stopPropagation(); openDirectChat('${escapeHTML(username)}')" title="Chatten">
-                    <i class="bi bi-chat-dots-fill"></i>${badgeHtml}
-                </button>
-            </div>
-        </div>`;
+        item.innerHTML = `<div class="d-flex w-100 justify-content-between align-items-center"><div class="d-flex align-items-center flex-grow-1" onclick="showPublicProfile('` + escapeHTML(username) + `')"><div class="online-indicator"></div><span class="text-white fw-bold">` + escapeHTML(username) + `</span></div><button class="btn btn-sm btn-link text-warning p-0 ms-2 position-relative" onclick="event.stopPropagation(); openDirectChat('` + escapeHTML(username) + `')" title="Chatten"><i class="bi bi-chat-dots-fill"></i>` + badgeHtml + `</button></div>`;
+        listEl.appendChild(item);
     }
     
     if (count === 0) {
-        html = '<p class="text-white-50 small mb-0 text-center">Niemand online</p>';
+        listEl.innerHTML = '<p class="text-white-50 small">Niemand online</p>';
     }
-
-    if (listEl) listEl.innerHTML = html;
-    if (dropListEl) dropListEl.innerHTML = html;
-
-    // Zahl in der Navigationsleiste updaten
-    const navCountEl = document.getElementById('navOnlineCount');
-    if (navCountEl) navCountEl.innerText = count;
 }
 
 function toggleOnlineSidebar() {
@@ -2894,6 +2820,17 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+
+
+
+
+
+
+
+
+
+
+
 /* =========================================
    EVENTS SIDEBAR & COUNTDOWN
    ========================================= */
@@ -2907,6 +2844,8 @@ function toggleEventsSidebar() {
 
 async function renderUpcomingEventsSidebar() {
     if (!state.currentUser) return;
+    
+
     
     document.getElementById('eventsSidebar')?.classList.remove('d-none');
     document.getElementById('eventsSidebarToggle')?.classList.remove('d-none');
@@ -2925,62 +2864,47 @@ async function renderUpcomingEventsSidebar() {
 }
 
 function updateEventsCountdownUI() {
-    const listEl = document.getElementById('eventsSidebarList'); // Für Mobile Sidebar
-    const tickerEl = document.getElementById('navEventTickerText'); // Für Desktop Nav
+    const listEl = document.getElementById('eventsSidebarList');
+    if (!listEl) return;
+    
+    if (upcomingEventsCache.length === 0) {
+        listEl.innerHTML = '<p class="text-white-50 small p-3">Keine anstehenden Events</p>';
+        return;
+    }
     
     let now = new Date();
     let html = '';
-    let tickerHtml = '<span class="text-muted">Aktuell keine Events geplant</span>';
     
-    if (upcomingEventsCache.length > 0) {
-        // Logik für Mobile Sidebar
-        upcomingEventsCache.forEach(ev => {
-            let evTime = new Date(ev.date_time);
-            let diff = evTime - now;
-            let timeStr = "";
-            if (diff > 0) {
-                let d = Math.floor(diff / (1000 * 60 * 60 * 24));
-                let h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                let m = Math.floor((diff / 1000 / 60) % 60);
-                let s = Math.floor((diff / 1000) % 60);
-                let pad = (num) => String(num).padStart(2, '0');
-                timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m) + ":" + pad(s);
-            } else {
-                timeStr = "<span class='text-success fw-bold'>Läuft jetzt!</span>";
-            }
-            html += `
-                <div class="event-countdown-item" style="cursor:pointer;" onclick="goToEvent('${ev.id}')">
-                    <div class="text-white fw-bold text-truncate" title="${escapeHTML(ev.title)}">${escapeHTML(ev.title)}</div>
-                    <div class="text-warning small mt-1 d-flex justify-content-between">
-                        <span><i class="bi bi-clock-history me-1"></i>${timeStr}</span>
-                        <i class="bi bi-chevron-right text-muted"></i>
-                    </div>
-                </div>
-            `;
-        });
-        
-        // Logik für den Desktop Nav-Liveticker (Nur das Nächste Event)
-        let nextEv = upcomingEventsCache[0];
-        let evTime = new Date(nextEv.date_time);
+    upcomingEventsCache.forEach(ev => {
+        let evTime = new Date(ev.date_time);
         let diff = evTime - now;
+        
+        let timeStr = "";
         if (diff > 0) {
             let d = Math.floor(diff / (1000 * 60 * 60 * 24));
             let h = Math.floor((diff / (1000 * 60 * 60)) % 24);
             let m = Math.floor((diff / 1000 / 60) % 60);
+            let s = Math.floor((diff / 1000) % 60);
+            
+            // Format numbers to be two digits
             let pad = (num) => String(num).padStart(2, '0');
-            let timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m);
-            // KOMPLETT WEISSER TEXT, KEIN text-muted
-            tickerHtml = `<span class="text-warning fw-bold me-2">NEXT RIDE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="fw-bold" style="color: #ffffff !important; letter-spacing: 1px;"><i class="bi bi-clock-history text-warning me-1"></i> START IN ${timeStr}</span>`;
+            timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m) + ":" + pad(s);
         } else {
-            tickerHtml = `<span class="text-danger fw-bold me-2">LIVE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="fw-bold" style="color: #ffffff !important; letter-spacing: 1px;"><i class="bi bi-broadcast text-danger me-1"></i> LÄUFT JETZT!</span>`;
+            timeStr = "<span class='text-success fw-bold'>Läuft jetzt!</span>";
         }
         
-    } else {
-        html = '<p class="text-white-50 small p-3">Keine anstehenden Events</p>';
-    }
+        html += `
+            <div class="event-countdown-item" style="cursor:pointer;" onclick="goToEvent('${ev.id}')">
+                <div class="text-white fw-bold text-truncate" title="${escapeHTML(ev.title)}">${escapeHTML(ev.title)}</div>
+                <div class="text-warning small mt-1 d-flex justify-content-between">
+                    <span><i class="bi bi-clock-history me-1"></i>${timeStr}</span>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+            </div>
+        `;
+    });
     
-    if (listEl) listEl.innerHTML = html;
-    if (tickerEl) tickerEl.innerHTML = tickerHtml;
+    listEl.innerHTML = html;
 }
 
 function goToEvent(eventId) {
@@ -2997,15 +2921,6 @@ function goToEvent(eventId) {
         }
     }, 500);
 }
-
-// Schließt das Dropdown, wenn man irgendwo anders hinklickt
-document.addEventListener('click', function(event) {
-    const counter = document.querySelector('.nav-online-counter');
-    const dropdown = document.getElementById('onlineDropdown');
-    if (dropdown && dropdown.classList.contains('show') && counter && !counter.contains(event.target)) {
-        dropdown.classList.remove('show');
-    }
-});
 
 /* =========================================
    11. PIXEL RIDER CREW MODUL
@@ -3038,41 +2953,33 @@ async function loadCrewMembers() {
             const defaultImg = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1000';
             const imgSrc = member.image_url || defaultImg;
             
-            // Social Links (Nican's Insta in Yellow/Warning, wie auf dem Screenshot)
+            // Social Links
             let socialLinks = '';
             if (member.social_ig) {
-                socialLinks += `<a href="${member.social_ig}" target="_blank" class="text-warning fs-5 mx-1" onclick="event.stopPropagation();"><i class="bi bi-instagram"></i></a>`;
+                socialLinks += `<a href="${member.social_ig}" target="_blank" class="text-warning fs-5 me-2"><i class="bi bi-instagram"></i></a>`;
             }
             if (member.social_tiktok) {
-                socialLinks += `<a href="${member.social_tiktok}" target="_blank" class="text-light fs-5 mx-1" onclick="event.stopPropagation();"><i class="bi bi-tiktok"></i></a>`;
+                socialLinks += `<a href="${member.social_tiktok}" target="_blank" class="text-warning fs-5 me-2"><i class="bi bi-tiktok"></i></a>`;
             }
             if (member.social_youtube) {
-                socialLinks += `<a href="${member.social_youtube}" target="_blank" class="text-danger fs-5 mx-1" onclick="event.stopPropagation();"><i class="bi bi-youtube"></i></a>`;
+                socialLinks += `<a href="${member.social_youtube}" target="_blank" class="text-warning fs-5"><i class="bi bi-youtube"></i></a>`;
             }
 
-            // PERFEKT ABGESTIMMTE FLIP-CARDS (Front: Bild Top, bg-dark unten. Exakt wie vor dem Bug)
             html += `
-                <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4 d-flex justify-content-center">
-                    <div class="crew-flip-card w-100" style="max-width: 280px;" onclick="this.classList.toggle('flipped')">
+                <div class="col-6 col-md-6 col-lg-4 col-xl-4 mb-3 d-flex justify-content-center">
+                    <div class="crew-flip-card w-100" style="max-width: 375px;" onclick="this.classList.toggle('flipped')">
                         <div class="crew-flip-card-inner">
-                            <!-- VORDERSEITE -->
-                            <div class="crew-flip-card-front d-flex flex-column" style="background-color: #1c1c1f;">
-                                <div style="height: 60%; width: 100%; overflow: hidden; flex-shrink: 0;">
-                                    <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" alt="${escapeHTML(member.name)}" loading="lazy">
-                                </div>
-                                <div class="p-3 d-flex flex-column justify-content-center align-items-center flex-grow-1">
-                                    <h5 class="text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h5>
-                                    <span class="text-light small mb-auto">${escapeHTML(member.role)}</span>
-                                    <div class="mt-3">
-                                        ${socialLinks}
-                                    </div>
+                            <div class="crew-flip-card-front card bg-dark border-secondary">
+                                <img src="${imgSrc}" class="w-100 h-100 object-fit-cover position-absolute top-0 start-0" alt="${escapeHTML(member.name)}" loading="lazy" style="opacity: 0.7;">
+                                <div class="position-absolute bottom-0 w-100 p-2 text-center" style="background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
+                                    <h6 class="card-title text-warning fw-bold mb-0 text-truncate" style="font-size: 18px;">${escapeHTML(member.name)}</h6>
+                                    <small class="text-white text-truncate d-block">${escapeHTML(member.role)}</small>
                                 </div>
                             </div>
-                            <!-- RÜCKSEITE -->
-                            <div class="crew-flip-card-back d-flex flex-column justify-content-center align-items-center p-4" style="background-color: #151518;">
-                                <h5 class="text-warning fw-bold text-uppercase mb-3">${escapeHTML(member.name)}</h5>
-                                <div class="text-white small mb-4 w-100" style="white-space: pre-wrap; word-break: break-word; text-align: center;">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</div>
-                                <div class="mt-auto">
+                            <div class="crew-flip-card-back position-relative" style="background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('${imgSrc}'); background-size: cover; background-position: center;">
+                                <h6 class="text-warning fw-bold mb-2 text-center" style="font-size: 18px;">${escapeHTML(member.name)}</h6>
+                                <p class="text-light fw-bold mb-0 text-center px-2">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</p>
+                                <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 d-flex justify-content-center gap-2">
                                     ${socialLinks}
                                 </div>
                             </div>
@@ -3334,3 +3241,12 @@ document.getElementById('crewImageInput')?.addEventListener('change', async func
         showCustomAlert('Fehler beim Komprimieren des Bildes', 'Fehler', 'danger');
     }
 });
+
+
+
+
+
+
+
+
+
