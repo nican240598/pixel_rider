@@ -1,161 +1,89 @@
-document.addEventListener('DOMContentLoaded', () => {
-    initMobileOptimizations();
-    
-    // Optional: Bei Resize prüfen, ob wir zwischen Mobile/Desktop wechseln
-    window.addEventListener('resize', () => {
-        if (window.innerWidth <= 768) {
-            initMobileOptimizations();
-        } else {
-            revertToDesktop();
-        }
-    });
-});
-
-function initMobileOptimizations() {
-    if (window.innerWidth > 768) return;
-
-    setupMobileNavigation();
-    transformDashboardToList();
-    applyBottomSheetModals();
-}
-
 /**
- * Ersetzt das Navbar-Verhalten für Mobile und generiert Header & Bottom Bar.
- * Bestehende updateNavbar() Aufrufe in app.js können diese Funktion triggern.
+ * Liest die bestehenden Desktop-Events aus und baut daraus das Mobile Card-Layout.
+ * Das Desktop-Layout wird dabei nicht verändert, sondern nur visuell versteckt.
  */
-function setupMobileNavigation() {
-    // 1. Mobile Top Header injizieren (falls nicht vorhanden)
-    if (!document.getElementById('mobileTopHeader')) {
-        const topHeader = document.createElement('div');
-        topHeader.id = 'mobileTopHeader';
-        topHeader.className = 'mobile-top-header d-md-none';
-        topHeader.innerHTML = `
-            <h1 class="brand-title">PIXEL RIDER</h1>
-            <div class="header-icons">
-                <i class="bi bi-bell" onclick="switchView('view-events')"></i>
-                <i class="bi bi-person-circle" onclick="switchView('view-profile')"></i>
-            </div>
-        `;
-        document.body.prepend(topHeader);
+function transformEventsToCards() {
+    const eventsView = document.getElementById('view-events');
+    // Abbrechen, wenn wir nicht im Events-Tab sind oder auf dem Desktop sind
+    if (!eventsView || window.innerWidth > 768) return;
+
+    // Verhindern, dass die Mobile-Ansicht doppelt generiert wird
+    if (document.getElementById('mobileEventsContainer')) return;
+
+    // 1. DESKTOP-ANSICHT VERSTECKEN (Der Schutz für dein bestehendes Design)
+    // Wir suchen das Element, das deine Desktop-Ansicht hält (z.B. eine Tabelle oder row)
+    const desktopContent = eventsView.querySelector('.table, .row, table');
+    if (desktopContent) {
+        // d-none = auf Mobile weg | d-md-flex / d-md-table = auf PC wieder da
+        desktopContent.classList.add('d-none', 'd-md-block'); 
     }
 
-    // 2. Bottom Tab Bar generieren
-    if (!document.getElementById('mobileBottomBar')) {
-        const bottomBar = document.createElement('div');
-        bottomBar.id = 'mobileBottomBar';
-        bottomBar.className = 'mobile-bottom-bar d-md-none';
-        
-        // Tab-Definitionen inkl. exakter switchView Aufrufe
-        const tabs = [
-            { icon: 'bi-house-door', label: 'HOME', view: 'view-dashboard' },
-            { icon: 'bi-calendar-event', label: 'EVENTS', view: 'view-events' },
-            { icon: 'bi-map', label: 'MAP', view: 'view-map' },
-            { icon: 'bi-chat-square-text', label: 'CREW', view: 'view-forum' },
-            { icon: 'bi-person', label: 'PROFIL', view: 'view-profile' }
-        ];
+    // 2. MOBILE-CONTAINER ERSTELLEN
+    const mobileContainer = document.createElement('div');
+    mobileContainer.id = 'mobileEventsContainer';
+    mobileContainer.className = 'd-md-none mt-3 pb-5';
 
-        let tabsHtml = '';
-        tabs.forEach((tab, index) => {
-            // Der erste Tab ist standardmäßig aktiv
-            const activeClass = index === 0 ? 'active' : '';
-            tabsHtml += `
-                <div class="mobile-tab-item ${activeClass}" onclick="switchMobileTab(this, '${tab.view}')">
-                    <i class="bi ${tab.icon}"></i>
-                    <span>${tab.label}</span>
+    // 3. FILTER-PILLS INJIZIEREN
+    mobileContainer.innerHTML += `
+        <div class="mobile-event-pills mb-3">
+            <div class="event-pill active">Alle Touren</div>
+            <div class="event-pill">Meine Zusagen</div>
+            <div class="event-pill">Vergangene</div>
+        </div>
+    `;
+
+    // 4. KARTEN AUS DESKTOP-DATEN GENERIEREN
+    // Wir suchen alle Event-Einträge aus deiner bestehenden Desktop-Ansicht (Karten oder Tabellenzeilen)
+    const desktopItems = eventsView.querySelectorAll('.card, tbody tr');
+    const cardsWrapper = document.createElement('div');
+
+    desktopItems.forEach(item => {
+        // Bestehende Onclick-Aktion (für dein Modal) sicherstellen
+        const onClickAttr = item.getAttribute('onclick') || '';
+        
+        // Texte auslesen (Fallback-Texte, falls die Struktur leicht abweicht)
+        // Du kannst die Selektoren anpassen, je nachdem in welchen Tags deine Desktop-Texte liegen
+        const title = item.querySelector('h1, h2, h3, h4, h5, .title, td:nth-child(1)')?.innerText || 'Community Tour';
+        const date = item.querySelector('.date, td:nth-child(2)')?.innerText || 'Demnächst';
+        const location = item.querySelector('.location, td:nth-child(3)')?.innerText || 'Treffpunkt in der App';
+
+        const card = document.createElement('div');
+        card.className = 'mobile-event-card';
+        // Wenn man auf die Karte klickt, öffnet sich das bestehende Bottom-Sheet Modal
+        card.setAttribute('onclick', onClickAttr); 
+        
+        card.innerHTML = `
+            <div class="event-card-header d-flex justify-content-between">
+                <strong><i class="bi bi-calendar-event me-2"></i>${date}</strong>
+                <span><i class="bi bi-clock me-1"></i>TBA</span>
+            </div>
+            <div class="event-card-body">
+                <h4>${title}</h4>
+                <div class="event-card-info">
+                    <i class="bi bi-geo-alt"></i> ${location}
                 </div>
-            `;
-        });
-        bottomBar.innerHTML = tabsHtml;
-        document.body.appendChild(bottomBar);
-    }
-}
-
-/**
- * Hilfsfunktion, um Tabs aktiv zu schalten und die native switchView aufzurufen
- */
-window.switchMobileTab = function(element, viewName) {
-    document.querySelectorAll('.mobile-tab-item').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
-    
-    // Ruft die bestehende Funktion in app.js auf
-    if (typeof switchView === 'function') {
-        switchView(viewName);
-    }
-};
-
-/**
- * Wandelt das Desktop-Grid (#dashboardGrid) dynamisch in die Listen-Struktur um
- */
-function transformDashboardToList() {
-    const grid = document.getElementById('dashboardGrid');
-    if (!grid || document.getElementById('mobileDashboardList')) return;
-
-    // Grid verstecken, ohne es zu löschen (für Desktop Fallback)
-    grid.classList.add('d-none', 'd-md-flex');
-
-    // Neuen Listen-Container erstellen
-    const listContainer = document.createElement('div');
-    listContainer.id = 'mobileDashboardList';
-    listContainer.className = 'mobile-dashboard-container d-md-none';
-
-    // Alle Karten auslesen und umschreiben
-    const cards = grid.querySelectorAll('.feature-card, [onclick^="switchView"]');
-    
-    cards.forEach(card => {
-        // Bestehende Daten extrahieren
-        const onClickAttr = card.getAttribute('onclick');
-        const iconElement = card.querySelector('i.bi');
-        const iconClass = iconElement ? iconElement.className : 'bi bi-grid';
-        
-        // Text-Extraktion (Fallback, falls Tags variieren)
-        const titleEl = card.querySelector('h1, h2, h3, h4, h5, h6, .title, strong');
-        const descEl = card.querySelector('p, span, .desc, .text-muted');
-        
-        const titleText = titleEl ? titleEl.innerText : 'Modul';
-        const descText = descEl ? descEl.innerText : '';
-
-        // Neue Zeile bauen
-        const listItem = document.createElement('div');
-        listItem.className = 'mobile-list-item';
-        listItem.setAttribute('onclick', onClickAttr); // Erhält die exakte Weiterleitung
-        
-        listItem.innerHTML = `
-            <div class="mobile-list-icon"><i class="${iconClass}"></i></div>
-            <div class="mobile-list-text">
-                <h4 class="mobile-list-title">${titleText}</h4>
-                <p class="mobile-list-desc">${descText}</p>
+                <div class="event-card-info">
+                    <i class="bi bi-signpost-split"></i> GPX Route verfügbar
+                </div>
             </div>
-            <i class="bi bi-chevron-right mobile-list-chevron"></i>
+            <div class="event-card-footer" onclick="event.stopPropagation(); /* Verhindert, dass Modal öffnet beim Klick auf Button */">
+                <div class="small text-muted"><i class="bi bi-people-fill me-1"></i> 👤 Crew dabei</div>
+                <button class="btn-event-join">DABEI</button>
+            </div>
         `;
-        
-        listContainer.appendChild(listItem);
+        cardsWrapper.appendChild(card);
     });
 
-    // Direkt nach dem Grid in den DOM hängen
-    grid.parentNode.insertBefore(listContainer, grid.nextSibling);
-}
+    mobileContainer.appendChild(cardsWrapper);
 
-/**
- * Injiziert den Drag-Handle für die Modals für den Bottom-Sheet-Look
- */
-function applyBottomSheetModals() {
-    const modals = document.querySelectorAll('.modal-content');
-    modals.forEach(content => {
-        if (!content.querySelector('.modal-drag-handle')) {
-            const handle = document.createElement('div');
-            handle.className = 'modal-drag-handle d-md-none';
-            content.prepend(handle);
-        }
-    });
-}
+    // 5. SCHWEBENDEN PLUS-BUTTON (FAB) HINZUFÜGEN
+    // Füge bei onclick einfach die ID deines bestehenden Modals zum Erstellen von Events ein
+    mobileContainer.innerHTML += `
+        <div class="mobile-fab" data-bs-toggle="modal" data-bs-target="#deinEventErstellenModalID">
+            <i class="bi bi-plus-lg"></i>
+        </div>
+    `;
 
-/**
- * Setzt Ansicht für Desktop zurück (Responsive Fallback)
- */
-function revertToDesktop() {
-    const list = document.getElementById('mobileDashboardList');
-    const grid = document.getElementById('dashboardGrid');
-    
-    if (list) list.remove();
-    if (grid) grid.classList.remove('d-none');
+    // Den fertigen Mobile-Block in die View einhängen
+    eventsView.appendChild(mobileContainer);
 }
