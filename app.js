@@ -2969,10 +2969,10 @@ function updateEventsCountdownUI() {
             let m = Math.floor((diff / 1000 / 60) % 60);
             let pad = (num) => String(num).padStart(2, '0');
             let timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m);
-            // HIER IST DIE SCHRIFT JETZT WEISS
-            tickerHtml = `<span class="text-warning fw-bold me-2">NEXT RIDE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="text-white fw-bold" style="letter-spacing: 1px;"><i class="bi bi-clock-history text-warning me-1"></i> START IN ${timeStr}</span>`;
+            // KOMPLETT WEISSER TEXT, KEIN text-muted
+            tickerHtml = `<span class="text-warning fw-bold me-2">NEXT RIDE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="fw-bold" style="color: #ffffff !important; letter-spacing: 1px;"><i class="bi bi-clock-history text-warning me-1"></i> START IN ${timeStr}</span>`;
         } else {
-            tickerHtml = `<span class="text-danger fw-bold me-2">LIVE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="text-white fw-bold" style="letter-spacing: 1px;"><i class="bi bi-broadcast text-danger me-1"></i> LÄUFT JETZT!</span>`;
+            tickerHtml = `<span class="text-danger fw-bold me-2">LIVE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="fw-bold" style="color: #ffffff !important; letter-spacing: 1px;"><i class="bi bi-broadcast text-danger me-1"></i> LÄUFT JETZT!</span>`;
         }
         
     } else {
@@ -3050,38 +3050,32 @@ async function loadCrewMembers() {
                 socialLinks += `<a href="${member.social_youtube}" target="_blank" class="text-danger fs-5 mx-1" onclick="event.stopPropagation();"><i class="bi bi-youtube"></i></a>`;
             }
 
-            // KUGELSICHERE INLINE-FLIP-CARDS (Kein Bootstrap-Einfluss mehr möglich!)
+            // PERFEKT ABGESTIMMTE FLIP-CARDS (Front: Bild Top, bg-dark unten. Exakt wie vor dem Bug)
             html += `
                 <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4 d-flex justify-content-center">
-                    <div style="width: 100%; max-width: 280px; height: 420px; perspective: 1000px; cursor: pointer;" 
-                         onclick="const inner = this.querySelector('.crew-flip-card-inner'); inner.style.transform = inner.style.transform === 'rotateY(180deg)' ? 'rotateY(0deg)' : 'rotateY(180deg)';">
-                        
-                        <!-- INNER CONTAINER -->
-                        <div class="crew-flip-card-inner" style="position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d;">
-                            
-                            <!-- FRONT -->
-                            <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; background-color: #212529; border: 1px solid rgba(197, 160, 26, 0.3); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                                <div style="width: 100%; height: 240px; flex-shrink: 0;">
+                    <div class="crew-flip-card w-100" style="max-width: 280px;" onclick="this.classList.toggle('flipped')">
+                        <div class="crew-flip-card-inner">
+                            <!-- VORDERSEITE -->
+                            <div class="crew-flip-card-front d-flex flex-column" style="background-color: #1c1c1f;">
+                                <div style="height: 60%; width: 100%; overflow: hidden; flex-shrink: 0;">
                                     <img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" alt="${escapeHTML(member.name)}" loading="lazy">
                                 </div>
-                                <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 15px;">
+                                <div class="p-3 d-flex flex-column justify-content-center align-items-center flex-grow-1">
                                     <h5 class="text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h5>
-                                    <h6 class="text-light mb-auto" style="font-size: 0.9rem;">${escapeHTML(member.role)}</h6>
-                                    <div style="margin-top: auto; display: flex; gap: 15px;">
+                                    <span class="text-light small mb-auto">${escapeHTML(member.role)}</span>
+                                    <div class="mt-3">
                                         ${socialLinks}
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- BACK -->
-                            <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: rotateY(180deg); background-color: #212529; border: 1px solid rgba(197, 160, 26, 0.6); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                                <h5 class="text-warning fw-bold text-uppercase text-center mb-3 border-bottom border-secondary pb-2">${escapeHTML(member.name)}</h5>
-                                <div class="text-light small text-center overflow-auto" style="flex-grow: 1; white-space: pre-wrap; word-break: break-word;">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</div>
-                                <div class="border-top border-secondary pt-3 mt-3 d-flex justify-content-center gap-3">
+                            <!-- RÜCKSEITE -->
+                            <div class="crew-flip-card-back d-flex flex-column justify-content-center align-items-center p-4" style="background-color: #151518;">
+                                <h5 class="text-warning fw-bold text-uppercase mb-3">${escapeHTML(member.name)}</h5>
+                                <div class="text-white small mb-4 w-100" style="white-space: pre-wrap; word-break: break-word; text-align: center;">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</div>
+                                <div class="mt-auto">
                                     ${socialLinks}
                                 </div>
                             </div>
-                            
                         </div>
                     </div>
                 </div>
