@@ -1,103 +1,196 @@
-/* --- Events: Filter Pills --- */
-    .mobile-event-pills {
-        display: flex;
-        overflow-x: auto;
-        white-space: nowrap;
-        padding-bottom: 8px;
-        scrollbar-width: none; /* Firefox */
-    }
-    .mobile-event-pills::-webkit-scrollbar {
-        display: none; /* Chrome/Safari */
-    }
-    .event-pill {
-        background-color: #1a1a1d;
-        color: var(--text-muted);
-        border: 1px solid #2a2a2d;
-        border-radius: 20px;
-        padding: 6px 16px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-right: 10px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .event-pill.active {
-        background-color: rgba(229, 184, 35, 0.15); /* Gold transparent */
-        color: var(--brand-gold);
-        border-color: var(--brand-gold);
+/* =========================================
+   MOBILE OPTIMIERUNG (< 769px) - PIXEL RIDER
+   ========================================= */
+@media (max-width: 768px) {
+    /* --- Globale Struktur & Layout --- */
+    body {
+        padding-top: 70px; /* Platz für Mobile Header */
+        padding-bottom: 80px; /* Platz für Bottom Nav */
     }
 
-    /* --- Events: Card Layout --- */
-    .mobile-event-card {
-        background-color: #111113;
-        border: 1px solid #1e1e20;
-        border-radius: 14px;
-        overflow: hidden;
-        margin-bottom: 16px;
-        transition: transform 0.2s;
+    /* Verstecke Desktop Header & alte Sidebar-Toggles */
+    .header-nav { display: none !important; }
+    #onlineSidebarToggle, #eventsSidebarToggle { display: none !important; }
+
+    /* Layout-Anpassungen (Stapel-Layout für Landing & Dashboard) */
+    #dashboardGrid > div, 
+    #view-landing .row > div {
+        width: 100% !important;
+        margin-bottom: 1rem;
     }
-    .mobile-event-card:active {
-        transform: scale(0.98);
+
+    /* 2-Spalten Layout für Crew, Garage & Flohmarkt */
+    #landing-crew-container > div,
+    #garageGrid > div,
+    #marketGrid > div {
+        width: 50% !important;
+        padding: 0 8px;
     }
-    .event-card-header {
-        background-color: rgba(157, 78, 221, 0.05);
-        padding: 10px 16px;
-        border-bottom: 1px solid #1e1e20;
-        font-size: 0.85rem;
-        color: var(--brand-purple-glow);
+    
+    .market-card-img-wrap, .garage-card-img-wrap {
+        height: 140px; /* Kompaktere Bilder für 2-Spalten */
     }
-    .event-card-body {
-        padding: 16px;
+    
+    .garage-card-title, .market-card-title {
+        font-size: 0.95rem;
     }
-    .event-card-body h4 {
-        font-weight: 700;
-        margin-bottom: 12px;
-        color: var(--text-white);
-    }
-    .event-card-info {
-        display: flex;
-        align-items: center;
-        color: var(--text-muted);
-        font-size: 0.9rem;
-        margin-bottom: 6px;
-    }
-    .event-card-info i {
-        width: 24px;
-        color: #6c6c75;
-    }
-    .event-card-footer {
-        padding: 12px 16px;
-        border-top: 1px solid #1e1e20;
+
+    /* --- Mobile Top Header (Glassmorphism) --- */
+    .mobile-top-header {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 70px;
+        background: rgba(9, 9, 11, 0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(157, 78, 221, 0.3);
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding: 0 16px;
+        z-index: 1040;
     }
-    .btn-event-join {
-        background-color: var(--brand-gold);
-        color: #000;
-        font-weight: 700;
-        border-radius: 8px;
-        padding: 6px 20px;
-        border: none;
+    .mobile-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 1.2rem;
+        color: var(--text-white);
+        text-transform: uppercase;
+    }
+    .mobile-brand img { height: 35px; width: auto; }
+    .mobile-brand span { color: var(--brand-purple-glow); }
+    
+    .mobile-header-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
     }
 
-    /* --- Events: Floating Action Button (FAB) --- */
-    .mobile-fab {
+    /* --- Mobile Bottom Navigation --- */
+    .mobile-bottom-nav {
         position: fixed;
-        bottom: 85px; /* Über der Bottom-Bar */
-        right: 20px;
-        width: 56px;
-        height: 56px;
-        background-color: var(--brand-purple-glow);
+        bottom: 0; left: 0; right: 0;
+        height: 65px;
+        background: rgba(9, 9, 11, 0.95);
+        backdrop-filter: blur(15px);
+        border-top: 1px solid rgba(197, 160, 26, 0.2);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 1040;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: var(--brand-purple-glow);
+        text-decoration: none;
+        width: 20%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .mobile-nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
+    .mobile-nav-item span { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
+    .mobile-nav-item.active { color: var(--brand-gold); text-shadow: 0 0 10px rgba(229, 184, 35, 0.4); }
+
+    /* --- Floating Action Buttons (FABs) --- */
+    .fab-container {
+        position: fixed;
+        right: 16px;
+        bottom: 85px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        z-index: 1030;
+    }
+    .fab-btn {
+        width: 50px;
+        height: 50px;
         border-radius: 50%;
+        background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-glow) 100%);
+        color: white;
         display: flex;
         justify-content: center;
         align-items: center;
-        box-shadow: 0 4px 12px rgba(157, 78, 221, 0.4);
-        z-index: 1030;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 15px rgba(157, 78, 221, 0.5);
+        border: 2px solid rgba(255, 255, 255, 0.1);
         cursor: pointer;
     }
-    .mobile-fab i {
-        font-size: 1.8rem;
-        color: #fff;
+    .fab-btn.gold {
+        background: linear-gradient(135deg, #c5a01a 0%, #e5b823 100%);
+        box-shadow: 0 4px 15px rgba(229, 184, 35, 0.5);
+        color: #000;
     }
+
+    /* --- Bottom Sheets (Modals, Map, Sidebars) --- */
+    .mobile-bottom-sheet {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: rgba(10, 10, 12, 0.98);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid var(--brand-purple);
+        border-radius: 24px 24px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        z-index: 1050;
+        padding: 15px 20px 80px;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+    .mobile-bottom-sheet.show { transform: translateY(0); }
+    .sheet-drag-handle {
+        width: 40px; height: 4px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 2px;
+        margin: 0 auto 15px;
+    }
+
+    /* --- Forum & Market Horizontal Pills --- */
+    .category-sidebar { background: transparent; border: none; padding: 0; box-shadow: none; }
+    .category-title, .category-sidebar .btn-custom-sub { display: none; } /* Button via FAB ersetzt */
+    .category-list, #market-categories, #profileTabs {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+        gap: 10px;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+        flex-wrap: nowrap !important;
+    }
+    .category-list::-webkit-scrollbar, #market-categories::-webkit-scrollbar { display: none; }
+    .category-item { margin-bottom: 0; border: 1px solid rgba(157, 78, 221, 0.4); border-radius: 20px; }
+
+    /* --- Map Fullscreen --- */
+    #view-map .row { display: flex; flex-direction: column; }
+    #map { 
+        height: calc(100vh - 150px) !important; /* Full height minus header/nav */
+        border-radius: 0; border: none; 
+        margin: -40px -20px 0 -20px; /* Negativer Margin für echten Fullscreen */
+    }
+
+    /* --- Chat Full-Screen mit Keyboard-Fix --- */
+    #directChatModal .modal-dialog, #chatTopicModal .modal-dialog {
+        margin: 0; width: 100%; height: 100%; max-width: 100%;
+    }
+    #directChatModal .modal-content, #chatTopicModal .modal-content {
+        height: 100vh; border-radius: 0 !important; border: none !important;
+        display: flex; flex-direction: column;
+    }
+    .chat-container, .chat-body-container {
+        flex: 1; max-height: none !important; overflow-y: auto; padding-bottom: 20px;
+    }
+    #directChatModal .modal-footer, #chatTopicModal .modal-body > .d-flex {
+        background: var(--bg-pure-black);
+        padding: 10px 15px env(safe-area-inset-bottom);
+        position: sticky; bottom: 0; width: 100%;
+    }
+    
+    /* Events Buttons Full Width */
+    .single-event-card .d-flex.gap-2.mt-4 { flex-direction: column; }
+    .single-event-card .btn { width: 100%; margin-bottom: 8px; }
+}
