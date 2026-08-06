@@ -248,8 +248,8 @@ function updateNavbar() {
     const navLinks = document.getElementById("navLinks");
     if(!navLinks) return;
     
-    // Gibt dem Container die volle Breite, um die Elemente aufzuteilen
-    navLinks.className = "d-flex align-items-center flex-grow-1 justify-content-end";
+    // GIBT DEM CONTAINER DIE VOLLE BREITE UND VERTEILT DIE 3 BEREICHE PERFEKT
+    navLinks.className = "d-flex align-items-center flex-grow-1 justify-content-between ms-4";
     
     if (state.currentUser) {
         let roleColor = "text-warning"; 
@@ -277,7 +277,7 @@ function updateNavbar() {
 
         navLinks.innerHTML = `
             <!-- 1. Menü Links (Links bündig) -->
-            <div class="d-none d-xl-flex align-items-center me-auto ms-4 gap-1">
+            <div class="d-none d-xl-flex align-items-center gap-1">
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'dashboard' ? 'active' : ''}" onclick="switchView('dashboard')"><i class="bi bi-grid-fill me-1"></i>Dashboard</button>
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'garage' ? 'active' : ''}" onclick="switchView('garage')"><i class="bi bi-tools me-1"></i>Garage</button>
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'forum' ? 'active' : ''}" onclick="switchView('forum')"><i class="bi bi-chat-quote me-1"></i>Forum</button>
@@ -308,11 +308,10 @@ function updateNavbar() {
                         <div id="navOnlineUsersList" class="dropdown-list" style="max-height: 300px; overflow-y: auto;"></div>
                     </div>
                 </div>
-
             </div>
 
             <!-- 3. Profil & Benachrichtigungen (Rechts bündig) -->
-            <div class="d-flex align-items-center gap-3 ms-4">
+            <div class="d-flex align-items-center gap-3">
                 ${adminBellHtml}
                 ${userBellHtml}
                 <span class="${roleColor} fw-bold user-role-badge" style="cursor:pointer;" onclick="switchView('profile')" title="Profil bearbeiten"><i class="bi bi-person-circle me-1"></i>${state.currentUser.username}</span>
@@ -321,6 +320,11 @@ function updateNavbar() {
         `;
         if (state.currentUser.isAdmin || state.currentUser.isModerator) checkAdminNotifications();
         checkUserNotifications();
+        
+        // NEU: Zwingt die App, die Daten sofort wieder in die neue Leiste zu laden
+        if (typeof updateEventsCountdownUI === 'function') updateEventsCountdownUI();
+        if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
+        
     } else {
         navLinks.innerHTML = `<button class="custom-nav-link border-0 bg-transparent" onclick="showModal('authModal')">Login / Registrieren</button>`;
     }
@@ -2565,6 +2569,46 @@ function stopPresence() {
     document.getElementById('onlineSidebarToggle')?.classList.add('d-none');
 }
 
+function renderOnlineUsers() {
+    const presenceState = currentPresenceState;
+    const listEl = document.getElementById('onlineUsersList'); // Für Mobile Sidebar
+    const dropListEl = document.getElementById('navOnlineUsersList'); // Für Desktop Dropdown
+    
+    let html = '';
+    let count = 0;
+    
+    for (const username in presenceState) {
+        count++;
+        let badgeHtml = '';
+        if (unreadDirectMessages[username] > 0) {
+            badgeHtml = '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">' + unreadDirectMessages[username] + '</span>';
+        }
+        html += `
+        <div class="online-user-item mb-2 p-2 rounded" style="background: rgba(255,255,255,0.05); cursor:pointer;">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+                <div class="d-flex align-items-center flex-grow-1" onclick="showPublicProfile('${escapeHTML(username)}')">
+                    <div class="online-indicator" style="width:8px; height:8px; border-radius:50%; background:#28a745; margin-right:10px; box-shadow:0 0 8px #28a745;"></div>
+                    <span class="text-white fw-bold">${escapeHTML(username)}</span>
+                </div>
+                <button class="btn btn-sm btn-link text-warning p-0 ms-2 position-relative" onclick="event.stopPropagation(); openDirectChat('${escapeHTML(username)}')" title="Chatten">
+                    <i class="bi bi-chat-dots-fill"></i>${badgeHtml}
+                </button>
+            </div>
+        </div>`;
+    }
+    
+    if (count === 0) {
+        html = '<p class="text-white-50 small mb-0 text-center">Niemand online</p>';
+    }
+
+    if (listEl) listEl.innerHTML = html;
+    if (dropListEl) dropListEl.innerHTML = html;
+
+    // Zahl in der Navigationsleiste updaten
+    const navCountEl = document.getElementById('navOnlineCount');
+    if (navCountEl) navCountEl.innerText = count;
+}
+
 function toggleOnlineSidebar() {
     const sidebar = document.getElementById('onlineUsersSidebar');
     if (sidebar) {
@@ -2862,6 +2906,64 @@ async function renderUpcomingEventsSidebar() {
     eventsCountdownInterval = setInterval(updateEventsCountdownUI, 1000);
 }
 
+function updateEventsCountdownUI() {
+    const listEl = document.getElementById('eventsSidebarList'); // Für Mobile Sidebar
+    const tickerEl = document.getElementById('navEventTickerText'); // Für Desktop Nav
+    
+    let now = new Date();
+    let html = '';
+    let tickerHtml = '<span class="text-muted">Aktuell keine Events geplant</span>';
+    
+    if (upcomingEventsCache.length > 0) {
+        // Logik für Mobile Sidebar
+        upcomingEventsCache.forEach(ev => {
+            let evTime = new Date(ev.date_time);
+            let diff = evTime - now;
+            let timeStr = "";
+            if (diff > 0) {
+                let d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                let h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                let m = Math.floor((diff / 1000 / 60) % 60);
+                let s = Math.floor((diff / 1000) % 60);
+                let pad = (num) => String(num).padStart(2, '0');
+                timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m) + ":" + pad(s);
+            } else {
+                timeStr = "<span class='text-success fw-bold'>Läuft jetzt!</span>";
+            }
+            html += `
+                <div class="event-countdown-item" style="cursor:pointer;" onclick="goToEvent('${ev.id}')">
+                    <div class="text-white fw-bold text-truncate" title="${escapeHTML(ev.title)}">${escapeHTML(ev.title)}</div>
+                    <div class="text-warning small mt-1 d-flex justify-content-between">
+                        <span><i class="bi bi-clock-history me-1"></i>${timeStr}</span>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // Logik für den Desktop Nav-Liveticker (Nur das Nächste Event)
+        let nextEv = upcomingEventsCache[0];
+        let evTime = new Date(nextEv.date_time);
+        let diff = evTime - now;
+        if (diff > 0) {
+            let d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            let h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            let m = Math.floor((diff / 1000 / 60) % 60);
+            let pad = (num) => String(num).padStart(2, '0');
+            let timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m);
+            tickerHtml = `<span class="text-warning me-1">NEXT RIDE:</span> ${escapeHTML(nextEv.title)} <span class="text-muted ms-2" style="font-weight: 500;">START IN ${timeStr}</span>`;
+        } else {
+            tickerHtml = `<span class="text-danger me-1">LIVE:</span> ${escapeHTML(nextEv.title)} <span class="text-success ms-2" style="font-weight: 500;">LÄUFT JETZT!</span>`;
+        }
+        
+    } else {
+        html = '<p class="text-white-50 small p-3">Keine anstehenden Events</p>';
+    }
+    
+    if (listEl) listEl.innerHTML = html;
+    if (tickerEl) tickerEl.innerHTML = tickerHtml;
+}
+
 function goToEvent(eventId) {
     if (window.innerWidth < 768) {
         toggleEventsSidebar(); // Close on mobile
@@ -2883,5 +2985,320 @@ document.addEventListener('click', function(event) {
     const dropdown = document.getElementById('onlineDropdown');
     if (dropdown && dropdown.classList.contains('show') && counter && !counter.contains(event.target)) {
         dropdown.classList.remove('show');
+    }
+});
+
+/* =========================================
+   11. PIXEL RIDER CREW MODUL
+   ========================================= */
+
+let allCrewMembers = [];
+let activeEditCrewId = null;
+let crewNewImageToAdd = null; // Store compressed base64 image
+
+async function loadCrewMembers() {
+    const container = document.getElementById('landing-crew-container');
+    if (!container) return;
+    
+    try {
+        const { data, error } = await db
+            .from('crew_members')
+            .select('*')
+            .order('sort_order', { ascending: true });
+            
+        if (error) throw error;
+        allCrewMembers = data || [];
+        
+        if (data.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center text-muted">Noch keine Crew-Mitglieder eingetragen.</div>';
+            return;
+        }
+
+        let html = '';
+        data.forEach(member => {
+            const defaultImg = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1000';
+            const imgSrc = member.image_url || defaultImg;
+            
+            // Social Links
+            let socialLinks = '';
+            if (member.social_ig) {
+                socialLinks += `<a href="${member.social_ig}" target="_blank" class="text-warning fs-5 me-2"><i class="bi bi-instagram"></i></a>`;
+            }
+            if (member.social_tiktok) {
+                socialLinks += `<a href="${member.social_tiktok}" target="_blank" class="text-warning fs-5 me-2"><i class="bi bi-tiktok"></i></a>`;
+            }
+            if (member.social_youtube) {
+                socialLinks += `<a href="${member.social_youtube}" target="_blank" class="text-warning fs-5"><i class="bi bi-youtube"></i></a>`;
+            }
+
+            html += `
+                <div class="col-md-6 col-lg-4 col-xl-3">
+                    <div class="card bg-dark border-secondary h-100 text-center" style="box-shadow: 0 0 15px rgba(255,215,0,0.1);">
+                        <div class="card-img-top overflow-hidden" style="height: 250px;">
+                            <img src="${imgSrc}" class="w-100 h-100 object-fit-cover" alt="${escapeHTML(member.name)}" loading="lazy">
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h4 class="card-title text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h4>
+                            <h6 class="text-light mb-3">${escapeHTML(member.role)}</h6>
+                            <p class="card-text text-muted small flex-grow-1">${escapeHTML(member.bio || '')}</p>
+                            <div class="mt-3">
+                                ${socialLinks}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+    } catch (err) {
+        console.error('Error loading crew members:', err);
+        container.innerHTML = '<div class="col-12 text-center text-danger">Fehler beim Laden der Crew.</div>';
+    }
+}
+
+async function renderCrewAdmin() {
+    const container = document.getElementById('crew-container');
+    if (!container) return;
+
+    try {
+        const { data, error } = await db
+            .from('crew_members')
+            .select('*')
+            .order('sort_order', { ascending: true });
+            
+        if (error) throw error;
+        allCrewMembers = data || [];
+        
+        if (data.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted w-100">Keine Crew-Mitglieder gefunden.</div>';
+            return;
+        }
+
+        let html = '';
+        data.forEach(member => {
+            const defaultImg = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1000';
+            const imgSrc = member.image_url || defaultImg;
+            
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card bg-dark border-secondary h-100" style="position:relative;">
+                        <div class="position-absolute top-0 end-0 p-2 z-3">
+                            <button class="btn btn-sm btn-outline-warning rounded-circle me-1" onclick="editCrew('${member.id}')"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="deleteCrew('${member.id}')"><i class="bi bi-trash"></i></button>
+                        </div>
+                        <div class="card-img-top overflow-hidden" style="height: 200px;">
+                            <img src="${imgSrc}" class="w-100 h-100 object-fit-cover" alt="${escapeHTML(member.name)}">
+                        </div>
+                        <div class="card-body">
+                            <span class="badge bg-secondary mb-2">Order: ${member.sort_order}</span>
+                            <h5 class="card-title text-warning fw-bold text-uppercase">${escapeHTML(member.name)}</h5>
+                            <h6 class="text-light">${escapeHTML(member.role)}</h6>
+                            <p class="card-text text-muted small text-truncate">${escapeHTML(member.bio || '')}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        
+    } catch (err) {
+        console.error('Error loading admin crew:', err);
+        container.innerHTML = '<div class="text-center text-danger w-100">Fehler beim Laden.</div>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadCrewMembers();
+
+    const form = document.getElementById('crewForm');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Speichert...';
+            btn.disabled = true;
+
+            const name = document.getElementById('crewName').value.trim();
+            const role = document.getElementById('crewRole').value.trim();
+            const bio = document.getElementById('crewBio').value.trim();
+            const social_ig = document.getElementById('crewIg').value.trim() || null;
+            const social_tiktok = document.getElementById('crewTiktok').value.trim() || null;
+            const social_youtube = document.getElementById('crewYoutube').value.trim() || null;
+            const sort_order = parseInt(document.getElementById('crewSortOrder').value) || 0;
+
+            const payload = {
+                name: name,
+                role: role,
+                bio: bio,
+                social_ig: social_ig,
+                social_tiktok: social_tiktok,
+                social_youtube: social_youtube,
+                sort_order: sort_order
+            };
+
+            // Nur überschreiben, wenn ein neues Bild ausgewählt wurde.
+            // Ansonsten behält Supabase den bestehenden Wert, wenn man das Feld nicht mitsendet.
+            if (crewNewImageToAdd) {
+                payload.image_url = crewNewImageToAdd;
+            } else if (!activeEditCrewId) {
+                payload.image_url = null; // Neu angelegt ohne Bild
+            }
+
+            try {
+                if (activeEditCrewId) {
+                    const { error } = await db
+                        .from('crew_members')
+                        .update(payload)
+                        .eq('id', activeEditCrewId);
+                    if (error) throw error;
+                } else {
+                    if (state.currentUser) payload.created_by = state.currentUser.id;
+                    const { error } = await db.from('crew_members').insert([payload]);
+                    if (error) throw error;
+                }
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('crewModal'));
+                if (modal) modal.hide();
+                e.target.reset();
+                activeEditCrewId = null;
+                crewNewImageToAdd = null;
+                
+                await renderCrewAdmin();
+                await loadCrewMembers();
+
+            } catch (err) {
+                console.error('Error saving crew member:', err);
+                alert('Fehler beim Speichern: ' + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
+
+    // Modal reset on close
+    const modalEl = document.getElementById('crewModal');
+    if (modalEl) {
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            document.getElementById('crewForm').reset();
+            activeEditCrewId = null;
+            crewNewImageToAdd = null;
+            renderCrewImagePreview();
+        });
+    }
+});
+
+window.editCrew = (id) => {
+    const member = allCrewMembers.find(m => m.id === id);
+    if(!member) return;
+
+    activeEditCrewId = id;
+    crewNewImageToAdd = null; // Behalte altes Bild
+    
+    document.getElementById('crewName').value = member.name;
+    document.getElementById('crewRole').value = member.role;
+    document.getElementById('crewBio').value = member.bio || '';
+    document.getElementById('crewIg').value = member.social_ig || '';
+    document.getElementById('crewTiktok').value = member.social_tiktok || '';
+    document.getElementById('crewYoutube').value = member.social_youtube || '';
+    document.getElementById('crewSortOrder').value = member.sort_order || 0;
+    
+    if(document.getElementById('crewImageInput')) document.getElementById('crewImageInput').value = '';
+    renderCrewImagePreview(member.image_url);
+    
+    const modal = new bootstrap.Modal(document.getElementById('crewModal'));
+    modal.show();
+};
+
+window.deleteCrew = async (id) => {
+    if(!confirm('Möchtest du dieses Crew-Mitglied wirklich löschen?')) return;
+    
+    try {
+        const { error } = await db
+            .from('crew_members')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        await renderCrewAdmin();
+        await loadCrewMembers();
+    } catch (err) {
+        console.error('Error deleting crew member:', err);
+        alert('Fehler beim Löschen: ' + err.message);
+    }
+};
+
+// --- Crew Image Upload Handling ---
+function renderCrewImagePreview(existingImgUrl = null) {
+    const container = document.getElementById('crewImagePreview');
+    if(!container) return;
+    container.innerHTML = '';
+    
+    // Zeige das neue Bild oder das bestehende Bild an
+    const imgSrc = crewNewImageToAdd || existingImgUrl;
+    
+    if (imgSrc) {
+        container.innerHTML = `<div class="thumb-preview-item" style="border-color:#ffc107"><img src="${imgSrc}" class="thumb-preview-img"></div>`;
+    }
+}
+
+document.getElementById('crewImageInput')?.addEventListener('change', async function() {
+    if (!this.files || this.files.length === 0) return;
+    const file = this.files[0];
+    
+    if (file.size > 15 * 1024 * 1024) {
+        showCustomAlert('Das Bild ist zu groß! Bitte max. 15 MB.', "Fehler", "warning");
+        this.value = '';
+        return;
+    }
+
+    const compressImage = (file) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDim = 800; // Genug für ein Profilbild
+                    
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height *= maxDim / width));
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width *= maxDim / height));
+                            height = maxDim;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.6));
+                };
+                img.onerror = () => resolve(event.target.result);
+                img.src = event.target.result;
+            };
+        });
+    };
+
+    try {
+        const compressedBase64 = await compressImage(file);
+        if (compressedBase64) {
+            crewNewImageToAdd = compressedBase64;
+            renderCrewImagePreview();
+        }
+    } catch(e) {
+        console.error('Kompression fehlgeschlagen', e);
+        showCustomAlert('Fehler beim Komprimieren des Bildes', 'Fehler', 'danger');
     }
 });
