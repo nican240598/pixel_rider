@@ -2969,10 +2969,10 @@ function updateEventsCountdownUI() {
             let m = Math.floor((diff / 1000 / 60) % 60);
             let pad = (num) => String(num).padStart(2, '0');
             let timeStr = (d > 0 ? d + "T " : "") + pad(h) + ":" + pad(m);
-            // HIER IST DIE SCHRIFT JETZT WEISS
-            tickerHtml = `<span class="text-warning fw-bold me-2">NEXT RIDE:</span> <span class="text-white fw-bold me-2">${escapeHTML(nextEv.title)}</span> <span class="text-white fw-bold" style="letter-spacing: 1px;">START IN ${timeStr}</span>`;
+            // HIER IST DIE SCHRIFT JETZT WEISS OHNE BADGE
+            tickerHtml = `<span class="text-warning fw-bold me-2">NEXT RIDE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="text-white fw-bold" style="letter-spacing: 1px;"><i class="bi bi-clock-history text-warning me-1"></i> START IN ${timeStr}</span>`;
         } else {
-            tickerHtml = `<span class="text-danger fw-bold me-2">LIVE:</span> <span class="text-white fw-bold me-2">${escapeHTML(nextEv.title)}</span> <span class="text-white fw-bold" style="letter-spacing: 1px;">LÄUFT JETZT!</span>`;
+            tickerHtml = `<span class="text-danger fw-bold me-2">LIVE:</span> <span class="text-white fw-bold me-3">${escapeHTML(nextEv.title)}</span> <span class="text-white fw-bold" style="letter-spacing: 1px;"><i class="bi bi-broadcast text-danger me-1"></i> LÄUFT JETZT!</span>`;
         }
         
     } else {
@@ -3038,36 +3038,41 @@ async function loadCrewMembers() {
             const defaultImg = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1000';
             const imgSrc = member.image_url || defaultImg;
             
-            // Social Links
+            // Social Links (Nican's Insta in Yellow/Warning, wie auf dem Screenshot)
             let socialLinks = '';
             if (member.social_ig) {
-                socialLinks += `<a href="${member.social_ig}" target="_blank" class="text-warning fs-5" onclick="event.stopPropagation();"><i class="bi bi-instagram"></i></a>`;
+                socialLinks += `<a href="${member.social_ig}" target="_blank" class="text-warning fs-5 mx-1" onclick="event.stopPropagation();"><i class="bi bi-instagram"></i></a>`;
             }
             if (member.social_tiktok) {
-                socialLinks += `<a href="${member.social_tiktok}" target="_blank" class="text-white fs-5" onclick="event.stopPropagation();"><i class="bi bi-tiktok"></i></a>`;
+                socialLinks += `<a href="${member.social_tiktok}" target="_blank" class="text-light fs-5 mx-1" onclick="event.stopPropagation();"><i class="bi bi-tiktok"></i></a>`;
             }
             if (member.social_youtube) {
-                socialLinks += `<a href="${member.social_youtube}" target="_blank" class="text-danger fs-5" onclick="event.stopPropagation();"><i class="bi bi-youtube"></i></a>`;
+                socialLinks += `<a href="${member.social_youtube}" target="_blank" class="text-danger fs-5 mx-1" onclick="event.stopPropagation();"><i class="bi bi-youtube"></i></a>`;
             }
 
-            // PERFEKT ABGESTIMMTE FLIP-CARDS
+            // PERFEKT ABGESTIMMTE FLIP-CARDS (Front: Bild Top, bg-dark unten)
             html += `
                 <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4 d-flex justify-content-center">
-                    <div class="crew-flip-card w-100" style="max-width: 280px;" onclick="this.classList.toggle('flipped')">
-                        <div class="crew-flip-card-inner">
+                    <div class="crew-flip-card w-100" style="max-width: 280px; height: 420px; aspect-ratio: auto;" onclick="this.classList.toggle('flipped')">
+                        <div class="crew-flip-card-inner h-100">
                             <!-- FRONT -->
-                            <div class="crew-flip-card-front">
-                                <img src="${imgSrc}" class="w-100 h-100" style="object-fit: cover; opacity: 0.8;" alt="${escapeHTML(member.name)}" loading="lazy">
-                                <div class="position-absolute bottom-0 w-100 p-3 text-center" style="background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);">
-                                    <h4 class="text-warning fw-bold mb-0 text-uppercase">${escapeHTML(member.name)}</h4>
-                                    <span class="text-white small fw-bold">${escapeHTML(member.role)}</span>
+                            <div class="crew-flip-card-front card border-secondary h-100 text-center" style="background-color: #212529;">
+                                <div class="card-img-top overflow-hidden" style="height: 240px; flex-shrink: 0;">
+                                    <img src="${imgSrc}" class="w-100 h-100 object-fit-cover" alt="${escapeHTML(member.name)}" loading="lazy">
+                                </div>
+                                <div class="card-body d-flex flex-column align-items-center pb-3">
+                                    <h5 class="card-title text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h5>
+                                    <h6 class="text-light mb-auto" style="font-size: 0.9rem;">${escapeHTML(member.role)}</h6>
+                                    <div class="mt-auto w-100 d-flex justify-content-center gap-3">
+                                        ${socialLinks}
+                                    </div>
                                 </div>
                             </div>
                             <!-- BACK -->
-                            <div class="crew-flip-card-back" style="background: linear-gradient(rgba(10,10,12,0.9), rgba(10,10,12,0.9)), url('${imgSrc}') center/cover;">
-                                <h4 class="text-warning fw-bold mb-3 text-uppercase">${escapeHTML(member.name)}</h4>
-                                <p class="text-light small text-center flex-grow-1 overflow-auto w-100 px-2">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</p>
-                                <div class="d-flex justify-content-center gap-4 mt-auto w-100 pt-3 border-top border-secondary">
+                            <div class="crew-flip-card-back h-100" style="background: linear-gradient(rgba(20,20,25,0.95), rgba(20,20,25,0.95)), url('${imgSrc}') center/cover;">
+                                <h5 class="text-warning fw-bold mb-3 text-uppercase">${escapeHTML(member.name)}</h5>
+                                <p class="text-light small text-center flex-grow-1 overflow-auto w-100 px-2 m-0" style="max-height: 250px;">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</p>
+                                <div class="d-flex justify-content-center gap-3 mt-auto w-100 pt-3 border-top border-secondary">
                                     ${socialLinks}
                                 </div>
                             </div>
