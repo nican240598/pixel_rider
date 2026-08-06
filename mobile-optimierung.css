@@ -1,96 +1,121 @@
 /* =========================================
-   MOBILE OPTIMIERUNG (< 769px) - CLEAN VERSION
+   MOBILE OPTIMIERUNG (< 769px) - FINAL DESIGN
    ========================================= */
 @media (max-width: 768px) {
     body {
         padding-top: 60px !important;
-        padding-bottom: 80px !important; /* Platz für Bottom Nav */
+        padding-bottom: 80px !important; 
     }
 
-    /* --- 1. Header (Keine Duplikate!) --- */
-    .header-nav {
-        height: 60px !important;
-        padding: 0 15px !important;
-    }
+    /* --- 1. Header Aufräumen --- */
+    .header-nav { height: 60px !important; padding: 0 15px !important; }
     .nav-container { padding: 0 !important; }
     .nav-brand { font-size: 1.3rem !important; }
-    
-    /* Verstecke Text-Links im Header, behalte nur die Benachrichtigungs-Glocken */
     #navLinks .custom-nav-link,
     #navLinks .btn-logout,
-    #navLinks .user-role-badge { 
-        display: none !important; 
-    }
+    #navLinks .user-role-badge { display: none !important; }
 
-    /* --- 2. Dashboard als Liste (Pures CSS, kein JS!) --- */
-    #dashboardGrid {
-        display: flex !important;
-        flex-direction: column;
-        gap: 12px;
-    }
-    #dashboardGrid .col-md-6 { 
-        width: 100% !important; 
-        padding: 0 !important; 
-    }
+    /* --- 2. Dashboard Cards (Mobile Listen-Ansicht im Mockup Style) --- */
+    #dashboardGrid { display: flex !important; flex-direction: column; gap: 12px; }
+    #dashboardGrid .col-md-6 { width: 100% !important; padding: 0 !important; }
+    
     #dashboardGrid .feature-card {
+        background: rgba(10, 10, 12, 0.95) !important;
+        border: 1px solid rgba(157, 78, 221, 0.3) !important;
+        border-radius: 16px !important;
+        padding: 16px 20px !important;
+        display: flex; 
+        align-items: center; 
+        text-align: left !important;
+        flex-direction: row; /* Icon links, Text rechts */
+        height: auto;
+    }
+    
+    #dashboardGrid .feature-icon {
+        font-size: 1.6rem !important; 
+        margin-bottom: 0 !important; 
+        margin-right: 18px;
+        color: var(--text-white) !important;
+        background: rgba(157, 78, 221, 0.15);
+        padding: 12px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
-        padding: 12px 16px !important;
-        text-align: left !important;
-        border-radius: 14px !important;
-        background: rgba(17, 17, 19, 0.9) !important;
-        min-height: 70px;
+        justify-content: center;
+        width: 55px;
+        height: 55px;
+        flex-shrink: 0; /* Verhindert, dass das Icon gequetscht wird */
     }
-    #dashboardGrid .feature-icon {
-        font-size: 1.5rem !important;
-        margin-bottom: 0 !important;
-        margin-right: 15px;
-        background: rgba(157, 78, 221, 0.15);
-        padding: 10px;
-        border-radius: 10px;
-        width: 45px; height: 45px;
-        display: flex; align-items: center; justify-content: center;
-    }
-    #dashboardGrid .feature-card h4 {
-        font-size: 1rem !important;
-        margin-bottom: 2px !important;
-    }
-    #dashboardGrid .feature-card p {
-        font-size: 0.8rem !important;
-        margin: 0 !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 200px;
+    
+    .feature-card-text {
+        display: flex;
+        flex-direction: column;
     }
 
-    /* --- 3. Bottom Nav Styling --- */
+    #dashboardGrid .feature-card h4 { 
+        font-size: 1.05rem !important; 
+        margin-bottom: 4px !important; 
+        color: var(--text-white) !important; 
+    }
+    
+    #dashboardGrid .feature-card p { 
+        font-size: 0.8rem !important; 
+        margin: 0 !important; 
+        color: var(--text-muted) !important;
+        line-height: 1.3;
+    }
+
+    /* Admin Center Karte als Highlight (wie im Bild) */
+    #dashboardGrid .admin-card-large {
+        background: linear-gradient(135deg, rgba(229,184,35,0.9) 0%, rgba(157,78,221,0.9) 100%) !important;
+        border: none !important; 
+        flex-direction: column; 
+        text-align: center !important; 
+        padding: 25px 20px !important;
+    }
+    #dashboardGrid .admin-card-large .feature-icon { 
+        margin-right: 0; 
+        margin-bottom: 12px; 
+        background: transparent; 
+        color: var(--bg-pure-black) !important;
+    }
+    #dashboardGrid .admin-card-large h4 { color: #fff !important; font-size: 1.3rem !important; }
+    #dashboardGrid .admin-card-large p { color: rgba(255,255,255,0.8) !important; }
+
+    /* --- 3. Sidebars als Bottom-Sheets einbinden --- */
+    .online-users-sidebar, .events-sidebar {
+        position: fixed !important; top: auto !important; bottom: 65px !important;
+        left: 0 !important; right: 0 !important; width: 100% !important;
+        max-height: 60vh !important;
+        transform: translateY(150%) !important;
+        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+        z-index: 1030 !important;
+        border-radius: 24px 24px 0 0 !important;
+        border: 1px solid var(--brand-purple) !important;
+        border-bottom: none !important;
+        background: rgba(9, 9, 11, 0.98) !important;
+        backdrop-filter: blur(15px);
+    }
+    .online-users-sidebar.show, .events-sidebar.show { transform: translateY(0) !important; }
+    #onlineSidebarToggle, #eventsSidebarToggle { display: none !important; } /* Alte Floating Buttons verstecken */
+
+    /* --- 4. Mobile Taskleiste (Bottom Nav) --- */
     .mobile-bottom-nav {
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        height: 65px;
-        background: rgba(9, 9, 11, 0.98);
-        border-top: 1px solid rgba(197, 160, 26, 0.2);
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        z-index: 1040;
-        padding-bottom: env(safe-area-inset-bottom);
+        position: fixed; bottom: 0; left: 0; right: 0; height: 65px;
+        background: rgba(5, 5, 7, 0.98); border-top: 1px solid rgba(157, 78, 221, 0.3);
+        display: flex; justify-content: space-around; align-items: center;
+        z-index: 1040; padding-bottom: env(safe-area-inset-bottom);
     }
     .mobile-nav-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        color: var(--text-muted);
-        cursor: pointer;
-        width: 20%;
-        transition: color 0.2s;
+        display: flex; flex-direction: column; align-items: center;
+        color: var(--text-muted); cursor: pointer; width: 20%;
+        transition: color 0.2s ease;
     }
-    .mobile-nav-item i { font-size: 1.3rem; margin-bottom: 2px; }
+    .mobile-nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
     .mobile-nav-item span { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; }
     .mobile-nav-item.active { color: var(--brand-gold); }
-
-    /* --- 4. Bottom-Sheet Modals (Pures CSS) --- */
+    
+    /* --- 5. Modal Anpassungen für Full-Screen Feeling --- */
     .modal-dialog {
         display: flex !important;
         align-items: flex-end;
@@ -110,8 +135,4 @@
         border-bottom: none !important;
         padding-bottom: env(safe-area-inset-bottom);
     }
-
-    /* --- 5. Verstecke störende Desktop-Elemente --- */
-    #onlineSidebarToggle, #eventsSidebarToggle { display: none !important; }
-    .online-users-sidebar, .events-sidebar { display: none !important; }
 }
