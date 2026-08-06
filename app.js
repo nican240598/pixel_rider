@@ -3053,15 +3053,18 @@ async function loadCrewMembers() {
             // PERFEKT ABGESTIMMTE FLIP-CARDS (Front: Bild Top, bg-dark unten)
             html += `
                 <div class="col-12 col-sm-6 col-lg-4 col-xl-3 mb-4 d-flex justify-content-center">
-                    <div class="crew-flip-card w-100" style="max-width: 280px; height: 420px; aspect-ratio: auto;" onclick="this.classList.toggle('flipped')">
-                        <div class="crew-flip-card-inner h-100">
+                    <div class="crew-flip-card w-100" style="max-width: 280px; height: 420px; aspect-ratio: auto;" 
+                         onmouseenter="this.classList.add('flipped')" 
+                         onmouseleave="this.classList.remove('flipped')" 
+                         onclick="this.classList.toggle('flipped')">
+                        <div class="crew-flip-card-inner h-100" style="transform-style: preserve-3d; -webkit-transform-style: preserve-3d;">
                             <!-- FRONT -->
-                            <div class="crew-flip-card-front card border-secondary h-100 text-center" style="background-color: #212529;">
-                                <div class="card-img-top overflow-hidden" style="height: 240px; flex-shrink: 0;">
+                            <div class="crew-flip-card-front h-100 text-center d-flex flex-column" style="background-color: #212529;">
+                                <div class="w-100 overflow-hidden" style="height: 240px; flex-shrink: 0;">
                                     <img src="${imgSrc}" class="w-100 h-100 object-fit-cover" alt="${escapeHTML(member.name)}" loading="lazy">
                                 </div>
-                                <div class="card-body d-flex flex-column align-items-center pb-3">
-                                    <h5 class="card-title text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h5>
+                                <div class="d-flex flex-column align-items-center justify-content-center p-3 flex-grow-1">
+                                    <h5 class="text-warning fw-bold text-uppercase mb-1">${escapeHTML(member.name)}</h5>
                                     <h6 class="text-light mb-auto" style="font-size: 0.9rem;">${escapeHTML(member.role)}</h6>
                                     <div class="mt-auto w-100 d-flex justify-content-center gap-3">
                                         ${socialLinks}
@@ -3069,9 +3072,11 @@ async function loadCrewMembers() {
                                 </div>
                             </div>
                             <!-- BACK -->
-                            <div class="crew-flip-card-back h-100" style="background: linear-gradient(rgba(20,20,25,0.95), rgba(20,20,25,0.95)), url('${imgSrc}') center/cover;">
+                            <div class="crew-flip-card-back h-100" style="background: linear-gradient(rgba(20,20,25,0.95), rgba(20,20,25,0.95)), url('${imgSrc}') center/cover no-repeat;">
                                 <h5 class="text-warning fw-bold mb-3 text-uppercase">${escapeHTML(member.name)}</h5>
-                                <p class="text-light small text-center flex-grow-1 overflow-auto w-100 px-2 m-0" style="max-height: 250px;">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</p>
+                                <div class="flex-grow-1 overflow-auto w-100 px-2 m-0" style="max-height: 250px;" onclick="event.stopPropagation();">
+                                    <p class="text-light small text-center m-0">${escapeHTML(member.bio || 'Keine Beschreibung angegeben.')}</p>
+                                </div>
                                 <div class="d-flex justify-content-center gap-3 mt-auto w-100 pt-3 border-top border-secondary">
                                     ${socialLinks}
                                 </div>
