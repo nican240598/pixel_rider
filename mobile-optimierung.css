@@ -1,79 +1,75 @@
 /* =========================================
-   MOBILE OPTIMIERUNG (< 769px) - PIXEL RIDER
+   MOBILE OPTIMIERUNG (< 769px) - CLEAN VERSION
    ========================================= */
 @media (max-width: 768px) {
-    /* --- Globale Struktur & Layout --- */
     body {
-        padding-top: 70px; /* Platz für Mobile Header */
-        padding-bottom: 80px; /* Platz für Bottom Nav */
+        padding-top: 60px !important;
+        padding-bottom: 80px !important; /* Platz für Bottom Nav */
     }
 
-    /* Verstecke Desktop Header & alte Sidebar-Toggles */
-    .header-nav { display: none !important; }
-    #onlineSidebarToggle, #eventsSidebarToggle { display: none !important; }
-
-    /* Layout-Anpassungen (Stapel-Layout für Landing & Dashboard) */
-    #dashboardGrid > div, 
-    #view-landing .row > div {
-        width: 100% !important;
-        margin-bottom: 1rem;
+    /* --- 1. Header (Keine Duplikate!) --- */
+    .header-nav {
+        height: 60px !important;
+        padding: 0 15px !important;
     }
-
-    /* 2-Spalten Layout für Crew, Garage & Flohmarkt */
-    #landing-crew-container > div,
-    #garageGrid > div,
-    #marketGrid > div {
-        width: 50% !important;
-        padding: 0 8px;
-    }
+    .nav-container { padding: 0 !important; }
+    .nav-brand { font-size: 1.3rem !important; }
     
-    .market-card-img-wrap, .garage-card-img-wrap {
-        height: 140px; /* Kompaktere Bilder für 2-Spalten */
-    }
-    
-    .garage-card-title, .market-card-title {
-        font-size: 0.95rem;
+    /* Verstecke Text-Links im Header, behalte nur die Benachrichtigungs-Glocken */
+    #navLinks .custom-nav-link,
+    #navLinks .btn-logout,
+    #navLinks .user-role-badge { 
+        display: none !important; 
     }
 
-    /* --- Mobile Top Header (Glassmorphism) --- */
-    .mobile-top-header {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        height: 70px;
-        background: rgba(9, 9, 11, 0.85);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(157, 78, 221, 0.3);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 16px;
-        z-index: 1040;
+    /* --- 2. Dashboard als Liste (Pures CSS, kein JS!) --- */
+    #dashboardGrid {
+        display: flex !important;
+        flex-direction: column;
+        gap: 12px;
     }
-    .mobile-brand {
+    #dashboardGrid .col-md-6 { 
+        width: 100% !important; 
+        padding: 0 !important; 
+    }
+    #dashboardGrid .feature-card {
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-weight: 800;
-        font-size: 1.2rem;
-        color: var(--text-white);
-        text-transform: uppercase;
+        padding: 12px 16px !important;
+        text-align: left !important;
+        border-radius: 14px !important;
+        background: rgba(17, 17, 19, 0.9) !important;
+        min-height: 70px;
     }
-    .mobile-brand img { height: 35px; width: auto; }
-    .mobile-brand span { color: var(--brand-purple-glow); }
-    
-    .mobile-header-actions {
-        display: flex;
-        gap: 15px;
-        align-items: center;
+    #dashboardGrid .feature-icon {
+        font-size: 1.5rem !important;
+        margin-bottom: 0 !important;
+        margin-right: 15px;
+        background: rgba(157, 78, 221, 0.15);
+        padding: 10px;
+        border-radius: 10px;
+        width: 45px; height: 45px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    #dashboardGrid .feature-card h4 {
+        font-size: 1rem !important;
+        margin-bottom: 2px !important;
+    }
+    #dashboardGrid .feature-card p {
+        font-size: 0.8rem !important;
+        margin: 0 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
     }
 
-    /* --- Mobile Bottom Navigation --- */
+    /* --- 3. Bottom Nav Styling --- */
     .mobile-bottom-nav {
         position: fixed;
         bottom: 0; left: 0; right: 0;
         height: 65px;
-        background: rgba(9, 9, 11, 0.95);
-        backdrop-filter: blur(15px);
+        background: rgba(9, 9, 11, 0.98);
         border-top: 1px solid rgba(197, 160, 26, 0.2);
         display: flex;
         justify-content: space-around;
@@ -85,112 +81,37 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        color: var(--brand-purple-glow);
-        text-decoration: none;
+        color: var(--text-muted);
+        cursor: pointer;
         width: 20%;
-        cursor: pointer;
-        transition: all 0.2s ease;
+        transition: color 0.2s;
     }
-    .mobile-nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
-    .mobile-nav-item span { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
-    .mobile-nav-item.active { color: var(--brand-gold); text-shadow: 0 0 10px rgba(229, 184, 35, 0.4); }
+    .mobile-nav-item i { font-size: 1.3rem; margin-bottom: 2px; }
+    .mobile-nav-item span { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; }
+    .mobile-nav-item.active { color: var(--brand-gold); }
 
-    /* --- Floating Action Buttons (FABs) --- */
-    .fab-container {
-        position: fixed;
-        right: 16px;
-        bottom: 85px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        z-index: 1030;
+    /* --- 4. Bottom-Sheet Modals (Pures CSS) --- */
+    .modal-dialog {
+        display: flex !important;
+        align-items: flex-end;
+        min-height: 100%;
+        margin: 0;
     }
-    .fab-btn {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-glow) 100%);
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 1.5rem;
-        box-shadow: 0 4px 15px rgba(157, 78, 221, 0.5);
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        cursor: pointer;
-    }
-    .fab-btn.gold {
-        background: linear-gradient(135deg, #c5a01a 0%, #e5b823 100%);
-        box-shadow: 0 4px 15px rgba(229, 184, 35, 0.5);
-        color: #000;
-    }
-
-    /* --- Bottom Sheets (Modals, Map, Sidebars) --- */
-    .mobile-bottom-sheet {
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        background: rgba(10, 10, 12, 0.98);
-        backdrop-filter: blur(20px);
-        border-top: 1px solid var(--brand-purple);
-        border-radius: 24px 24px 0 0;
+    .modal.fade .modal-dialog {
         transform: translateY(100%);
-        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        z-index: 1050;
-        padding: 15px 20px 80px;
-        max-height: 85vh;
-        overflow-y: auto;
+        transition: transform 0.3s ease-out;
     }
-    .mobile-bottom-sheet.show { transform: translateY(0); }
-    .sheet-drag-handle {
-        width: 40px; height: 4px;
-        background: rgba(255,255,255,0.2);
-        border-radius: 2px;
-        margin: 0 auto 15px;
+    .modal.show .modal-dialog {
+        transform: translateY(0);
+    }
+    .modal-content {
+        border-radius: 20px 20px 0 0 !important;
+        width: 100%;
+        border-bottom: none !important;
+        padding-bottom: env(safe-area-inset-bottom);
     }
 
-    /* --- Forum & Market Horizontal Pills --- */
-    .category-sidebar { background: transparent; border: none; padding: 0; box-shadow: none; }
-    .category-title, .category-sidebar .btn-custom-sub { display: none; } /* Button via FAB ersetzt */
-    .category-list, #market-categories, #profileTabs {
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        white-space: nowrap;
-        scrollbar-width: none;
-        gap: 10px;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-        flex-wrap: nowrap !important;
-    }
-    .category-list::-webkit-scrollbar, #market-categories::-webkit-scrollbar { display: none; }
-    .category-item { margin-bottom: 0; border: 1px solid rgba(157, 78, 221, 0.4); border-radius: 20px; }
-
-    /* --- Map Fullscreen --- */
-    #view-map .row { display: flex; flex-direction: column; }
-    #map { 
-        height: calc(100vh - 150px) !important; /* Full height minus header/nav */
-        border-radius: 0; border: none; 
-        margin: -40px -20px 0 -20px; /* Negativer Margin für echten Fullscreen */
-    }
-
-    /* --- Chat Full-Screen mit Keyboard-Fix --- */
-    #directChatModal .modal-dialog, #chatTopicModal .modal-dialog {
-        margin: 0; width: 100%; height: 100%; max-width: 100%;
-    }
-    #directChatModal .modal-content, #chatTopicModal .modal-content {
-        height: 100vh; border-radius: 0 !important; border: none !important;
-        display: flex; flex-direction: column;
-    }
-    .chat-container, .chat-body-container {
-        flex: 1; max-height: none !important; overflow-y: auto; padding-bottom: 20px;
-    }
-    #directChatModal .modal-footer, #chatTopicModal .modal-body > .d-flex {
-        background: var(--bg-pure-black);
-        padding: 10px 15px env(safe-area-inset-bottom);
-        position: sticky; bottom: 0; width: 100%;
-    }
-    
-    /* Events Buttons Full Width */
-    .single-event-card .d-flex.gap-2.mt-4 { flex-direction: column; }
-    .single-event-card .btn { width: 100%; margin-bottom: 8px; }
+    /* --- 5. Verstecke störende Desktop-Elemente --- */
+    #onlineSidebarToggle, #eventsSidebarToggle { display: none !important; }
+    .online-users-sidebar, .events-sidebar { display: none !important; }
 }
