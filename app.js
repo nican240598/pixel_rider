@@ -248,8 +248,8 @@ function updateNavbar() {
     const navLinks = document.getElementById("navLinks");
     if(!navLinks) return;
     
-    // GIBT DEM CONTAINER DIE VOLLE BREITE UND VERTEILT DIE 3 BEREICHE PERFEKT
-    navLinks.className = "d-flex align-items-center flex-grow-1 justify-content-between ms-4";
+    // Gibt dem Container die volle Breite und verteilt die 3 Bereiche perfekt (Links, Mitte, Rechts)
+    navLinks.className = "d-flex align-items-center w-100 px-3";
     
     if (state.currentUser) {
         let roleColor = "text-warning"; 
@@ -277,7 +277,7 @@ function updateNavbar() {
 
         navLinks.innerHTML = `
             <!-- 1. Menü Links (Links bündig) -->
-            <div class="d-none d-xl-flex align-items-center gap-1">
+            <div class="d-none d-xl-flex align-items-center gap-2" style="flex: 1; justify-content: flex-start;">
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'dashboard' ? 'active' : ''}" onclick="switchView('dashboard')"><i class="bi bi-grid-fill me-1"></i>Dashboard</button>
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'garage' ? 'active' : ''}" onclick="switchView('garage')"><i class="bi bi-tools me-1"></i>Garage</button>
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'forum' ? 'active' : ''}" onclick="switchView('forum')"><i class="bi bi-chat-quote me-1"></i>Forum</button>
@@ -285,35 +285,22 @@ function updateNavbar() {
                 <button class="custom-nav-link border-0 bg-transparent ${state.currentView === 'map' ? 'active' : ''}" onclick="switchView('map')"><i class="bi bi-geo-alt me-1"></i>Map</button>
             </div>
 
-            <!-- 2. Ticker & Online (Zentriert) -->
-            <div class="d-none d-lg-flex align-items-center gap-3">
-                
-                <!-- Event Liveticker -->
+            <!-- 2. Ticker (Mittig) -->
+            <div class="d-none d-lg-flex align-items-center justify-content-center" style="flex: 2;">
                 <div class="nav-event-ticker" onclick="switchView('events')">
-                    <i class="bi bi-lightning-charge-fill text-warning me-2"></i>
-                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">
-                        <span id="navEventTickerText" class="text-white fw-bold text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.5px;">Lade Events...</span>
-                    </div>
-                </div>
-
-                <!-- Online Counter & Dropdown -->
-                <div class="nav-online-counter position-relative" onclick="document.getElementById('onlineDropdown').classList.toggle('show')">
-                    <i class="bi bi-people-fill text-warning me-1"></i>
-                    <span class="text-white fw-bold text-uppercase" style="font-size: 0.85rem;">Pixel Rider Online: <span id="navOnlineCount" class="text-success ms-1">0</span></span>
-                    
-                    <div id="onlineDropdown" class="nav-dropdown d-none text-start" onclick="event.stopPropagation();">
-                        <div class="border-bottom border-secondary pb-2 mb-2">
-                            <h6 class="text-warning mb-0 text-uppercase fw-bold"><i class="bi bi-broadcast me-2"></i>Crew Online</h6>
-                        </div>
-                        <div id="navOnlineUsersList" class="dropdown-list" style="max-height: 300px; overflow-y: auto;"></div>
+                    <i class="bi bi-lightning-charge-fill text-warning me-2 fs-5"></i>
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; width: 100%;">
+                        <span id="navEventTickerText" class="text-white fw-bold text-uppercase" style="font-size: 0.95rem; letter-spacing: 0.5px;">Lade Events...</span>
                     </div>
                 </div>
             </div>
 
             <!-- 3. Profil & Benachrichtigungen (Rechts bündig) -->
-            <div class="d-flex align-items-center gap-3">
-                ${adminBellHtml}
-                ${userBellHtml}
+            <div class="d-flex align-items-center gap-4" style="flex: 1; justify-content: flex-end;">
+                <div class="d-flex align-items-center gap-3">
+                    ${adminBellHtml}
+                    ${userBellHtml}
+                </div>
                 <span class="${roleColor} fw-bold user-role-badge" style="cursor:pointer;" onclick="switchView('profile')" title="Profil bearbeiten"><i class="bi bi-person-circle me-1"></i>${state.currentUser.username}</span>
                 <button class="btn-logout" onclick="logout()">Logout</button>
             </div>
@@ -321,12 +308,37 @@ function updateNavbar() {
         if (state.currentUser.isAdmin || state.currentUser.isModerator) checkAdminNotifications();
         checkUserNotifications();
         
-        // NEU: Zwingt die App, die Daten sofort wieder in die neue Leiste zu laden
+        // Zwingt die App, die Daten sofort wieder in die neue Leiste zu laden
         if (typeof updateEventsCountdownUI === 'function') updateEventsCountdownUI();
         if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
+
+        // Schwimmendes Online Panel für unten rechts erstellen
+        let floatingOnline = document.getElementById("floatingOnlineCounter");
+        if (!floatingOnline) {
+            floatingOnline = document.createElement("div");
+            floatingOnline.id = "floatingOnlineCounter";
+            floatingOnline.className = "floating-online-counter d-none d-lg-block";
+            floatingOnline.innerHTML = `
+                <div class="nav-online-counter position-relative" onclick="document.getElementById('onlineDropdown').classList.toggle('show')">
+                    <i class="bi bi-people-fill text-warning me-2 fs-5"></i>
+                    <span class="text-white fw-bold text-uppercase" style="font-size: 0.95rem;">Pixel Rider Online: <span id="navOnlineCount" class="text-success ms-1">0</span></span>
+                    
+                    <div id="onlineDropdown" class="nav-dropdown dropup d-none text-start" onclick="event.stopPropagation();">
+                        <div class="border-bottom border-secondary pb-2 mb-2">
+                            <h6 class="text-warning mb-0 text-uppercase fw-bold"><i class="bi bi-broadcast me-2"></i>Crew Online</h6>
+                        </div>
+                        <div id="navOnlineUsersList" class="dropdown-list" style="max-height: 300px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(floatingOnline);
+            if (typeof renderOnlineUsers === 'function') renderOnlineUsers();
+        }
         
     } else {
-        navLinks.innerHTML = `<button class="custom-nav-link border-0 bg-transparent" onclick="showModal('authModal')">Login / Registrieren</button>`;
+        navLinks.innerHTML = `<button class="custom-nav-link border-0 bg-transparent ms-auto" onclick="showModal('authModal')">Login / Registrieren</button>`;
+        const floatingOnline = document.getElementById("floatingOnlineCounter");
+        if (floatingOnline) floatingOnline.remove();
     }
 }
 
@@ -792,7 +804,13 @@ document.getElementById("forgotPasswordForm")?.addEventListener("submit", async 
 });
 
 function logout() {
-    stopPresence(); state.currentUser = null; localStorage.removeItem("app_user"); switchView('landing'); }
+    stopPresence(); 
+    state.currentUser = null; 
+    localStorage.removeItem("app_user"); 
+    const floatingOnline = document.getElementById("floatingOnlineCounter");
+    if (floatingOnline) floatingOnline.remove();
+    switchView('landing'); 
+}
 
 /* =========================================
    4. ADMIN PANEL
