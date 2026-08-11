@@ -1,15 +1,103 @@
-import React, { useState } from 'react';
-import { CrewEvent, User } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { CrewEvent, User, MapPin as MapPinType } from '../types';
 import { Calendar, Plus, MapPin, Shield, Edit, Trash2, X, Compass, Sun, CloudRain, Maximize2, ExternalLink, Thermometer, Wind, UserCheck } from 'lucide-react';
 
 interface EventsViewProps {
   currentUser: User;
   events: CrewEvent[];
+  mapPins?: MapPinType[];
+  allUsers?: User[];
   onAddEvent: (event: Omit<CrewEvent, 'id' | 'participants'>) => void;
   onEditEvent: (id: string, event: Partial<CrewEvent>) => void;
   onDeleteEvent: (id: string) => void;
   onToggleParticipation: (eventId: string) => void;
-  onCalculateMeetingPoint: (event: CrewEvent) => void;
+  onCalculateMeetingPoint?: (event: CrewEvent) => void;
+}
+
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
+export function calculateMeetingPointForEvent(
+  ev: CrewEvent,
+  mapPins: MapPinType[] = [],
+  allUsers: User[] = []
+) {
+  const participants = ev.participants || [];
+  
+  const matchedRiders: { username: string; email: string; city: string; lat: number; lng: number }[] = [];
+  const missingPinsRiders: string[] = [];
+
+  for (const p of participants) {
+    if (!p) continue;
+    const pClean = p.trim().toLowerCase();
+    
+    // Find in mapPins by email or username
+    const pin = mapPins.find(
+      (m) => (m.email && m.email.toLowerCase() === pClean) || (m.username && m.username.toLowerCase() === pClean)
+    );
+
+    // Find in allUsers for display name
+    const user = allUsers.find(
+      (u) => (u.email && u.email.toLowerCase() === pClean) || (u.username && u.username.toLowerCase() === pClean)
+    );
+    const displayName = user?.username || pin?.username || (p.includes('@') ? p.split('@')[0] : p);
+
+    if (pin && typeof pin.lat === 'number' && typeof pin.lng === 'number' && !isNaN(pin.lat) && !isNaN(pin.lng)) {
+      matchedRiders.push({
+        username: displayName,
+        email: pin.email || p,
+        city: pin.city || 'Standort',
+        lat: pin.lat,
+        lng: pin.lng,
+      });
+    } else {
+      missingPinsRiders.push(displayName);
+    }
+  }
+
+  if (matchedRiders.length === 0) {
+    return {
+      success: false,
+      matchedRiders: [],
+      missingPinsRiders,
+      avgLat: null,
+      avgLng: null,
+      avgDistanceKm: 0,
+    };
+  }
+
+  const totalLat = matchedRiders.reduce((sum, r) => sum + r.lat, 0);
+  const totalLng = matchedRiders.reduce((sum, r) => sum + r.lng, 0);
+  const avgLat = totalLat / matchedRiders.length;
+  const avgLng = totalLng / matchedRiders.length;
+
+  const ridersWithDistance = matchedRiders.map((r) => {
+    const dist = calculateDistanceKm(r.lat, r.lng, avgLat, avgLng);
+    return { ...r, distanceKm: dist };
+  });
+
+  const totalDistance = ridersWithDistance.reduce((sum, r) => sum + r.distanceKm, 0);
+  const avgDistanceKm = Math.round(totalDistance / ridersWithDistance.length);
+
+  return {
+    success: true,
+    matchedRiders: ridersWithDistance,
+    missingPinsRiders,
+    avgLat,
+    avgLng,
+    avgDistanceKm,
+  };
 }
 
 // Weather forecast calculation helper
@@ -82,6 +170,8 @@ export const getEventWeather = (location?: string, dateTimeStr?: string) => {
 export const EventsView: React.FC<EventsViewProps> = ({
   currentUser,
   events,
+  mapPins = [],
+  allUsers = [],
   onAddEvent,
   onEditEvent,
   onDeleteEvent,
@@ -91,6 +181,34 @@ export const EventsView: React.FC<EventsViewProps> = ({
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editEvent, setEditEvent] = useState<CrewEvent | null>(null);
   const [detailEvent, setDetailEvent] = useState<CrewEvent | null>(null);
+  const [meetingPointModalEvent, setMeetingPointModalEvent] = useState<CrewEvent | null>(null);
+  const [meetingPointCityName, setMeetingPointCityName] = useState<string>('');
+  const [loadingGeo, setLoadingGeo] = useState<boolean>(false);
+  const [savedNotice, setSavedNotice] = useState<string>('');
+
+  useEffect(() => {
+    if (!meetingPointModalEvent) {
+      setMeetingPointCityName('');
+      setSavedNotice('');
+      return;
+    }
+    const calc = calculateMeetingPointForEvent(meetingPointModalEvent, mapPins, allUsers);
+    if (calc.success && calc.avgLat && calc.avgLng) {
+      setLoadingGeo(true);
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${calc.avgLat}&lon=${calc.avgLng}`)
+        .then((res) => res.json())
+        .then((data) => {
+          const addr = data.address || {};
+          const place = addr.city || addr.town || addr.village || addr.municipality || addr.county || 'Mittelpunkt-Region';
+          const state = addr.state ? `, ${addr.state}` : '';
+          setMeetingPointCityName(`${place}${state}`);
+        })
+        .catch(() => {
+          setMeetingPointCityName(`Mittelpunkt: ${calc.avgLat?.toFixed(4)}, ${calc.avgLng?.toFixed(4)}`);
+        })
+        .finally(() => setLoadingGeo(false));
+    }
+  }, [meetingPointModalEvent, mapPins, allUsers]);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -266,7 +384,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                         </button>
 
                         <button
-                          onClick={() => onCalculateMeetingPoint(ev)}
+                          onClick={() => setMeetingPointModalEvent(ev)}
                           className="py-3 px-3 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1 cursor-pointer transition-all"
                           title="Idealer Treffpunkt berechnen"
                         >
@@ -378,7 +496,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
                     </button>
 
                     <button
-                      onClick={() => onCalculateMeetingPoint(ev)}
+                      onClick={() => setMeetingPointModalEvent(ev)}
                       className="px-3 py-2.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-800 rounded-xl font-bold text-xs flex items-center gap-1 cursor-pointer"
                       title="Idealer Treffpunkt"
                     >
@@ -529,7 +647,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
 
                 <button
                   onClick={() => {
-                    onCalculateMeetingPoint(detailEvent);
+                    setMeetingPointModalEvent(detailEvent);
                     setDetailEvent(null);
                   }}
                   className="py-3.5 px-6 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700 rounded-full font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
@@ -545,7 +663,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
       {/* Add Event Modal */}
       {addModalOpen && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="max-w-md w-full rounded-2xl bg-slate-950 border border-purple-800 p-6 relative shadow-2xl">
+          <div className="max-w-md w-full rounded-2xl bg-slate-950 border border-purple-800 p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto pb-10">
             <button
               onClick={() => setAddModalOpen(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white border-0 bg-transparent cursor-pointer"
@@ -640,7 +758,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
       {/* Edit Event Modal */}
       {editEvent && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="max-w-md w-full rounded-2xl bg-slate-950 border border-amber-500/50 p-6 relative shadow-2xl">
+          <div className="max-w-md w-full rounded-2xl bg-slate-950 border border-amber-500/50 p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto pb-10">
             <button
               onClick={() => setEditEvent(null)}
               className="absolute top-4 right-4 text-slate-400 hover:text-white border-0 bg-transparent cursor-pointer"
@@ -716,6 +834,147 @@ export const EventsView: React.FC<EventsViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Ideal Meeting Point Modal */}
+      {meetingPointModalEvent && (() => {
+        const calc = calculateMeetingPointForEvent(meetingPointModalEvent, mapPins, allUsers);
+        return (
+          <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+            <div className="max-w-lg w-full rounded-2xl bg-slate-950 border border-indigo-500/40 p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+              <button
+                onClick={() => {
+                  setMeetingPointModalEvent(null);
+                  setSavedNotice('');
+                }}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white border-0 bg-transparent cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-2 mb-2">
+                <Compass className="w-6 h-6 text-amber-400" />
+                <h3 className="text-xl font-bold uppercase text-amber-400">Idealer Treffpunkt</h3>
+              </div>
+              <p className="text-xs text-slate-300 mb-4">
+                Berechnung des fairsten Mittelpunkts für <span className="font-bold text-white">"{meetingPointModalEvent.title}"</span> basierend auf den Wohnorten aller Teilnehmer.
+              </p>
+
+              {savedNotice && (
+                <div className="mb-4 p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold text-center">
+                  {savedNotice}
+                </div>
+              )}
+
+              {calc.success && calc.avgLat && calc.avgLng ? (
+                <div className="space-y-4">
+                  {/* Midpoint Result Box */}
+                  <div className="p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-indigo-100">
+                    <div className="text-[10px] uppercase font-extrabold text-amber-400 mb-1">
+                      Berechneter Mittelpunkt
+                    </div>
+                    <div className="text-lg font-black text-white flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-red-400 flex-shrink-0" />
+                      {loadingGeo ? (
+                        <span className="text-xs text-slate-400 animate-pulse">Lade Ortsnamen...</span>
+                      ) : (
+                        meetingPointCityName || `Mittelpunkt (${calc.avgLat.toFixed(4)}, ${calc.avgLng.toFixed(4)})`
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-300 mt-2 flex flex-wrap gap-4">
+                      <span>📍 Koord: {calc.avgLat.toFixed(4)}, {calc.avgLng.toFixed(4)}</span>
+                      <span>📏 Ø Anfahrt: ca. <strong className="text-amber-300">{calc.avgDistanceKm} km</strong> pro Biker</span>
+                    </div>
+                  </div>
+
+                  {/* Participants Breakdown */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase text-slate-400 mb-2 flex items-center gap-1.5">
+                      <UserCheck className="w-4 h-4 text-emerald-400" />
+                      Berücksichtigte Biker ({calc.matchedRiders.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {calc.matchedRiders.map((r, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center font-bold text-xs">
+                              {r.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <span className="font-bold text-white block">{r.username}</span>
+                              <span className="text-[10px] text-slate-400">aus {r.city}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                              ~{r.distanceKm} km Anfahrt
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Missing Pins list if any */}
+                  {calc.missingPinsRiders.length > 0 && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
+                      <span className="font-bold block mb-1">⚠️ Noch kein Standort-Pin auf der Rider-Map:</span>
+                      <span className="text-slate-300">{calc.missingPinsRiders.join(', ')}</span>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Tipp: Diese Biker können ihren Wohnort auf der Rider-Map eintragen, um automatisch berücksichtigt zu werden!
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="pt-2 space-y-2">
+                    <button
+                      onClick={() => {
+                        const locText = meetingPointCityName
+                          ? `${meetingPointCityName} (Mittelpunkt)`
+                          : `Mittelpunkt (${calc.avgLat?.toFixed(4)}, ${calc.avgLng?.toFixed(4)})`;
+                        onEditEvent(meetingPointModalEvent.id, {
+                          location: locText,
+                          lat: calc.avgLat || undefined,
+                          lng: calc.avgLng || undefined,
+                        });
+                        setSavedNotice(`✓ Treffpunkt "${locText}" wurde als offizieller Event-Treffpunkt übernommen!`);
+                      }}
+                      className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs uppercase rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 border-0 cursor-pointer"
+                    >
+                      <MapPin className="w-4 h-4" /> Als Event-Treffpunkt Übernehmen
+                    </button>
+
+                    <a
+                      href={`https://www.google.com/maps?q=${calc.avgLat},${calc.avgLng}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full py-3 px-4 bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-700 font-extrabold text-xs uppercase rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer no-underline block text-center"
+                    >
+                      <ExternalLink className="w-4 h-4 text-amber-400" /> In Google Maps Öffnen
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 text-center bg-slate-900 border border-slate-800 rounded-xl space-y-3">
+                  <MapPin className="w-10 h-10 text-amber-400 mx-auto opacity-60" />
+                  <h4 className="text-sm font-bold uppercase text-white">Keine Standorte gefunden</h4>
+                  <p className="text-xs text-slate-400">
+                    {calc.missingPinsRiders.length > 0
+                      ? `Für die angemeldeten Teilnehmer (${calc.missingPinsRiders.join(', ')}) wurden bisher keine Standort-Pins auf der Rider-Map hinterlegt.`
+                      : 'Es sind derzeit noch keine Teilnehmer für dieses Event angemeldet.'}
+                  </p>
+                  <p className="text-xs text-amber-300 font-medium bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                    💡 Tipp: Melde dich zum Event an und setze deinen Wohnort auf der <strong>Rider-Map</strong>, damit der fairste Mittelpunkt berechnet werden kann!
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

@@ -317,7 +317,7 @@ export default function App() {
   const nextEvent = events.length > 0 ? events[0] : null;
 
   return (
-    <div className="min-h-screen bg-[#0a0314] text-slate-100 flex flex-col font-sans relative pb-20 md:pb-0 overflow-x-hidden">
+    <div className="min-h-screen bg-[#0a0314] text-slate-100 flex flex-col font-sans relative overflow-x-hidden">
       {/* Cinematic Road Background Image */}
       <div 
         className="fixed inset-0 bg-cover bg-center pointer-events-none z-0 opacity-25 mix-blend-screen scale-105 filter brightness-90 contrast-125 transition-all duration-1000"
@@ -351,7 +351,7 @@ export default function App() {
       />
 
       {/* Main View Container */}
-      <main className="flex-1 z-10 pt-[80px]">
+      <main className="flex-1 pt-[80px] pb-28 md:pb-12">
         {currentView === 'landing' && (
           <LandingView crewMembers={crewMembers} pixelOfMonth={pixelOfMonth} onNavigate={setCurrentView} />
         )}
@@ -437,6 +437,8 @@ export default function App() {
           <EventsView
             currentUser={currentUser}
             events={events}
+            mapPins={mapPins}
+            allUsers={allUsers}
             onAddEvent={async (evData) => {
               const newEv: CrewEvent = { ...evData, id: Date.now().toString(), participants: [currentUser.email] };
               setEvents([...events, newEv]);
@@ -685,9 +687,18 @@ export default function App() {
         {currentView === 'public_profile' && publicProfileUser && (
           <PublicProfileView
             username={publicProfileUser}
+            avatarUrl={
+              allUsers.find((usr) => usr.username.toLowerCase() === publicProfileUser.toLowerCase())?.avatar_url ||
+              crewMembers.find((c) => c.name.toLowerCase() === publicProfileUser.toLowerCase())?.image_url
+            }
             userSocials={(() => {
               const u = allUsers.find((usr) => usr.username.toLowerCase() === publicProfileUser.toLowerCase());
-              return { ig: u?.social_ig, tt: u?.social_tiktok, yt: u?.social_youtube };
+              const c = crewMembers.find((cr) => cr.name.toLowerCase() === publicProfileUser.toLowerCase());
+              return {
+                ig: u?.social_ig || c?.social_ig,
+                tt: u?.social_tiktok,
+                yt: u?.social_youtube || c?.social_youtube,
+              };
             })()}
             userBikes={bikes.filter((b) => b.owner === publicProfileUser)}
             userTopics={topics.filter((t) => t.author === publicProfileUser)}

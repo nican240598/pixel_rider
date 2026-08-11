@@ -16,7 +16,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   onToggleEventsPanel,
 }) => {
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-slate-950/95 backdrop-blur-lg border-t border-purple-900/50 flex justify-around items-center z-50 px-2">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-slate-950/95 backdrop-blur-lg border-t border-purple-900/50 flex justify-around items-center z-40 px-2">
       <button
         onClick={() => setCurrentView('dashboard')}
         className={`flex flex-col items-center gap-1 text-[10px] font-bold uppercase transition-colors bg-transparent border-0 cursor-pointer ${

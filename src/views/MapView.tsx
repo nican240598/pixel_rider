@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Poi, User } from '../types';
+import type { MapPin, Poi, User } from '../types';
 import { MapPin as MapPinIcon, Search, Compass, Plus, RotateCw } from 'lucide-react';
 import L from 'leaflet';
 
