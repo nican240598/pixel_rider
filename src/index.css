@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --brand-purple: #7b2cbf;
+  --brand-purple-glow: #9d4edd;
+  --brand-yellow: #facc15;
+  --brand-yellow-glow: #fef08a;
+  --bg-dark-purple: #0f071a;
+  --bg-card-purple: #1a0b2e;
+}
+
+body {
+  background-color: #0f071a;
+  color: #f8fafc;
+  font-family: 'Rajdhani', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f071a;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(250, 204, 21, 0.4);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(250, 204, 21, 0.8);
+}
+
+/* Flip Card CSS - 50% Compact Size */
+.crew-flip-card {
+  perspective: 1000px;
+  cursor: pointer;
+  width: 190px;
+  height: 290px;
+  margin: 0;
+}
+
+.crew-flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.crew-flip-card.flipped .crew-flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.crew-flip-card-front,
+.crew-flip-card-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  background-color: #1a0b2e;
+}
+
+.crew-flip-card-back {
+  transform: rotateY(180deg);
+  background-color: #1a0b2e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+}
+
+/* Card Glow Effect */
+.feature-card-glow {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(123, 44, 191, 0.3);
+  background-color: rgba(26, 11, 46, 0.85);
+  backdrop-filter: blur(12px);
+}
+
+.feature-card-glow:hover {
+  transform: translateY(-4px);
+  border-color: rgba(250, 204, 21, 0.6);
+  box-shadow: 0 10px 30px -10px rgba(250, 204, 21, 0.25);
+}
+
+/* Leaflet Container Fixes */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  z-index: 10;
+}
+
