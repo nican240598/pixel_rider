@@ -1,7 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { User, AppView, CrewMember, CrewEvent, GpxRoute, ForumTopic, GarageBike, MarketItem, MapPin, Poi, UserNotification, DirectMessage, MarketAppeal, PixelOfMonth } from './types';
+import { User, AppView, CrewMember, CrewEvent, GpxRoute, ForumTopic, GarageBike, MarketItem, MapPin, Poi, UserNotification, DirectMessage, MarketAppeal, TripEntry, SpotCheckin, SpotOfTheWeek, PhotoOfTheWeek } from './types';
 import { supabase, hashPassword } from './lib/supabase';
-import { INITIAL_CREW, INITIAL_EVENTS, INITIAL_GPX, INITIAL_FORUM, INITIAL_GARAGE, INITIAL_MARKET, INITIAL_POIS } from './lib/initialData';
+import { INITIAL_CREW, INITIAL_EVENTS, INITIAL_GPX, INITIAL_FORUM, INITIAL_GARAGE, INITIAL_MARKET, INITIAL_POIS, INITIAL_TRIPS, INITIAL_SPOT_CHECKINS, INITIAL_SPOT_OF_THE_WEEK } from './lib/initialData';
+
+const INITIAL_PHOTOS_OF_THE_WEEK: PhotoOfTheWeek[] = [
+  {
+    id: 'photo-1',
+    title: 'Sonnenuntergang an der Schwarzwaldhochstraße',
+    author: "Alex 'Nitro' Becker",
+    image_url: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?q=80&w=1200',
+    description: 'Blick vom Mummelsee kurz vor Dämmerung nach unserer 280km Crew-Ausfahrt.',
+    votes: ['Sven_R1', 'Marco_CB', 'Lisa_Ninja', 'Tom_Ducati', 'Nico_Pixel', 'Jan_MT09', 'Elena_GS'],
+    created_at: new Date().toISOString(),
+    is_winner: true,
+  },
+  {
+    id: 'photo-2',
+    title: 'Kurvenspaß am Kesselberg',
+    author: 'Sven_R1',
+    image_url: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200',
+    description: 'Perfekter Kniewinkel und frischer Asphalt auf der morgendlichen Runde.',
+    votes: ['Alex_Nitro', 'Lisa_Ninja', 'Marco_CB', 'Nico_Pixel'],
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'photo-3',
+    title: 'Boxenstopp & Espresso am Treffpunkt',
+    author: 'Lisa_Ninja',
+    image_url: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1200',
+    description: 'Die Pixel Crew versammelt beim Kaffeestopp vor der Alpenpass-Etappe.',
+    votes: ['Tom_Ducati', 'Jan_MT09', 'Sven_R1'],
+    created_at: new Date().toISOString(),
+  },
+];
 
 // Components
 import { Navbar } from './components/Navbar';
@@ -38,7 +69,14 @@ export default function App() {
 
   // Datasets
   const [crewMembers, setCrewMembers] = useState<CrewMember[]>(INITIAL_CREW);
-  const [events, setEvents] = useState<CrewEvent[]>(INITIAL_EVENTS);
+  const [events, setEvents] = useState<CrewEvent[]>(() => {
+    try {
+      const saved = localStorage.getItem('app_events');
+      return saved ? JSON.parse(saved) : INITIAL_EVENTS;
+    } catch (e) {
+      return INITIAL_EVENTS;
+    }
+  });
   const [routes, setRoutes] = useState<GpxRoute[]>(INITIAL_GPX);
   const [topics, setTopics] = useState<ForumTopic[]>(INITIAL_FORUM);
   const [bikes, setBikes] = useState<GarageBike[]>(INITIAL_GARAGE);
@@ -56,21 +94,33 @@ export default function App() {
     { code: 'RIDER-CREW1', created_by: 'Nican', is_used: false }
   ]);
 
-  const [pixelOfMonth, setPixelOfMonth] = useState<PixelOfMonth | null>(() => {
+  // Feature A & B State: Trips, Spot Checkins, Spot of the Week
+  const [trips, setTrips] = useState<TripEntry[]>(() => {
     try {
-      const saved = localStorage.getItem('app_pixel_of_month');
-      return saved
-        ? JSON.parse(saved)
-        : {
-            username: "Alex 'Nitro' Becker",
-            title: 'Pixel des Monats – August 2026',
-            reason: 'Hat diesen Monat 12 gemeinsame Ausfahrten organisiert, 3 Liegenbleibern spontan geholfen und den Schwarzwaldblick-Treff etabliert!',
-            image_url: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1000',
-            bike: 'Yamaha MT-09 SP',
-            social_ig: 'https://instagram.com',
-          };
+      const saved = localStorage.getItem('app_trips');
+      return saved ? JSON.parse(saved) : INITIAL_TRIPS;
     } catch (e) {
-      return null;
+      return INITIAL_TRIPS;
+    }
+  });
+
+  const [spotCheckins, setSpotCheckins] = useState<SpotCheckin[]>(() => {
+    try {
+      const saved = localStorage.getItem('app_spot_checkins');
+      return saved ? JSON.parse(saved) : INITIAL_SPOT_CHECKINS;
+    } catch (e) {
+      return INITIAL_SPOT_CHECKINS;
+    }
+  });
+
+  const [spotOfTheWeek, setSpotOfTheWeek] = useState<SpotOfTheWeek>(INITIAL_SPOT_OF_THE_WEEK);
+
+  const [photosOfTheWeek, setPhotosOfTheWeek] = useState<PhotoOfTheWeek[]>(() => {
+    try {
+      const saved = localStorage.getItem('app_photos_of_the_week');
+      return saved ? JSON.parse(saved) : INITIAL_PHOTOS_OF_THE_WEEK;
+    } catch (e) {
+      return INITIAL_PHOTOS_OF_THE_WEEK;
     }
   });
 
@@ -85,6 +135,8 @@ export default function App() {
   const [directChatUser, setDirectChatUser] = useState<string | null>(null);
   const [publicProfileUser, setPublicProfileUser] = useState<string | null>(null);
   const [usernameChangeOpen, setUsernameChangeOpen] = useState(false);
+  const [leaderboardModalOpen, setLeaderboardModalOpen] = useState(false);
+  const [addTripModalOpen, setAddTripModalOpen] = useState(false);
 
   // Helper alert
   const showAlert = (title: string, message: string, type: 'success' | 'warning' | 'danger' = 'warning') => {
@@ -105,7 +157,24 @@ export default function App() {
 
         // Fetch Events
         const { data: eventsData } = await supabase.from('crew_events').select('*');
-        if (eventsData && eventsData.length > 0) setEvents(eventsData);
+        if (eventsData && eventsData.length > 0) {
+          const parsedEvents = eventsData.map((ev) => {
+            let parts = ev.participants;
+            if (typeof parts === 'string') {
+              try {
+                parts = JSON.parse(parts);
+              } catch (e) {
+                parts = [parts];
+              }
+            }
+            if (!Array.isArray(parts)) parts = [];
+            return { ...ev, participants: parts };
+          });
+          setEvents(parsedEvents);
+          try {
+            localStorage.setItem('app_events', JSON.stringify(parsedEvents));
+          } catch (e) {}
+        }
 
         // Fetch GPX
         const { data: gpxData } = await supabase.from('gpx_routes').select('*');
@@ -164,9 +233,47 @@ export default function App() {
         // Fetch All Users (for admin)
         const { data: usersData } = await supabase.from('users').select('*');
         if (usersData) {
-          setAllUsers(usersData);
           setAdminResetUsers(usersData.filter((u) => u.reset_requested));
           setAdminInviteUsers(usersData.filter((u) => u.invite === 'PENDING'));
+
+          if (currentUser) {
+            const dbUser = usersData.find(
+              (u) =>
+                u.username.toLowerCase() === currentUser.username.toLowerCase() ||
+                (currentUser.email && u.email?.toLowerCase() === currentUser.email.toLowerCase())
+            );
+            if (dbUser) {
+              const mergedUser: User = {
+                ...currentUser,
+                email: currentUser.email || dbUser.email,
+                role: dbUser.role || currentUser.role,
+                avatar_url: currentUser.avatar_url || dbUser.avatar_url || '',
+                social_ig: currentUser.social_ig || dbUser.social_ig || '',
+                social_tiktok: currentUser.social_tiktok || dbUser.social_tiktok || '',
+                social_youtube: currentUser.social_youtube || dbUser.social_youtube || '',
+              };
+              if (JSON.stringify(mergedUser) !== JSON.stringify(currentUser)) {
+                setCurrentUser(mergedUser);
+                try {
+                  localStorage.setItem('app_user', JSON.stringify(mergedUser));
+                } catch (e) {}
+              }
+            }
+          }
+
+          const mergedUsersList = usersData.map((u) => {
+            if (currentUser && u.username.toLowerCase() === currentUser.username.toLowerCase()) {
+              return {
+                ...u,
+                avatar_url: currentUser.avatar_url || u.avatar_url || '',
+                social_ig: currentUser.social_ig || u.social_ig || '',
+                social_tiktok: currentUser.social_tiktok || u.social_tiktok || '',
+                social_youtube: currentUser.social_youtube || u.social_youtube || '',
+              };
+            }
+            return u;
+          });
+          setAllUsers(mergedUsersList);
         }
       } catch (e) {
         console.error('Supabase fetch error', e);
@@ -249,13 +356,23 @@ export default function App() {
         return;
       }
 
+      const nowIso = new Date().toISOString();
       const loggedUser: User = {
         username: u.username,
         email: u.email,
         role: u.role || 'member',
         isAdmin: u.role === 'admin' || u.username.toLowerCase() === 'nican',
         isModerator: u.role === 'moderator',
+        last_login: nowIso,
+        avatar_url: u.avatar_url || '',
+        social_ig: u.social_ig || '',
+        social_tiktok: u.social_tiktok || '',
+        social_youtube: u.social_youtube || '',
       };
+
+      try {
+        await supabase.from('users').update({ last_login: nowIso }).eq('username', u.username);
+      } catch (e) {}
 
       setCurrentUser(loggedUser);
       localStorage.setItem('app_user', JSON.stringify(loggedUser));
@@ -313,6 +430,131 @@ export default function App() {
     setCurrentView('landing');
   };
 
+  // Feature A Handler: Add new trip / km entry
+  const handleAddTrip = async (distanceKm: number, description?: string, title?: string) => {
+    if (!currentUser) return;
+    const newTrip: TripEntry = {
+      id: Date.now().toString(),
+      user_id: currentUser.username,
+      username: currentUser.username,
+      distance_km: distanceKm,
+      description: description || 'Saison-Ausfahrt',
+      title: title || 'Rundfahrt',
+      created_at: new Date().toISOString(),
+    };
+    const updated = [newTrip, ...trips];
+    setTrips(updated);
+    try {
+      localStorage.setItem('app_trips', JSON.stringify(updated));
+      await supabase.from('trips').insert([{
+        user_id: currentUser.username,
+        username: currentUser.username,
+        distance_km: distanceKm,
+        description: description || 'Saison-Ausfahrt',
+        title: title || 'Rundfahrt',
+      }]);
+    } catch (e) {}
+    showAlert('Kilometer Gespeichert! 🏍️', `${distanceKm} km wurden deiner Saisonbilanz gutgeschrieben.`, 'success');
+    setAddTripModalOpen(false);
+  };
+
+  // Feature B Handler: Spot of the Week checkin
+  const handleSpotCheckin = async (spotId: string, spotName: string) => {
+    if (!currentUser) return;
+    const already = spotCheckins.some(
+      (sc) => sc.spot_id === spotId && sc.username.toLowerCase() === currentUser.username.toLowerCase()
+    );
+    if (already) {
+      showAlert('Bereits Eingecheckt', `Du hast dich bereits am Spot "${spotName}" eingecheckt!`, 'warning');
+      return;
+    }
+    const newCheckin: SpotCheckin = {
+      id: Date.now().toString(),
+      spot_id: spotId,
+      spot_name: spotName,
+      username: currentUser.username,
+      created_at: new Date().toISOString(),
+    };
+    const updated = [newCheckin, ...spotCheckins];
+    setSpotCheckins(updated);
+    try {
+      localStorage.setItem('app_spot_checkins', JSON.stringify(updated));
+      await supabase.from('spot_checkins').insert([{
+        spot_id: spotId,
+        spot_name: spotName,
+        username: currentUser.username,
+      }]);
+    } catch (e) {}
+    showAlert('Spot Check-in Erfolgreich! 📍', `Du hast dich am "${spotName}" eingecheckt. Badge erhalten!`, 'success');
+  };
+
+  // Photo of the Week Handlers
+  const handleVotePhoto = (photoId: string) => {
+    if (!currentUser) {
+      showAlert('Anmeldung erforderlich', 'Bitte melde dich an, um für das Bild der Woche abzustabstimmen.', 'warning');
+      setAuthModalOpen(true);
+      return;
+    }
+
+    setPhotosOfTheWeek((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id === photoId) {
+          const votes = p.votes || [];
+          const hasVoted = votes.includes(currentUser.username);
+          const newVotes = hasVoted
+            ? votes.filter((u) => u !== currentUser.username)
+            : [...votes, currentUser.username];
+          return { ...p, votes: newVotes };
+        }
+        return p;
+      });
+      localStorage.setItem('app_photos_of_the_week', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleSubmitPhoto = (photoData: { title: string; image_url: string; description: string }) => {
+    if (!currentUser) return;
+    const newPhoto: PhotoOfTheWeek = {
+      id: Date.now().toString(),
+      title: photoData.title,
+      author: currentUser.username,
+      image_url: photoData.image_url,
+      description: photoData.description,
+      votes: [currentUser.username],
+      created_at: new Date().toISOString(),
+    };
+    setPhotosOfTheWeek((prev) => {
+      const updated = [newPhoto, ...prev];
+      localStorage.setItem('app_photos_of_the_week', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleSetWinnerPhoto = (photoId: string) => {
+    setPhotosOfTheWeek((prev) => {
+      const updated = prev.map((p) => ({
+        ...p,
+        is_winner: p.id === photoId,
+      }));
+      localStorage.setItem('app_photos_of_the_week', JSON.stringify(updated));
+      return updated;
+    });
+    showAlert('Gewinner gekürt', 'Das gewählte Foto wird nun als Bild der Woche auf der Landingpage präsentiert!', 'success');
+  };
+
+  const handleDeletePhoto = (photoId: string, reason: string) => {
+    setPhotosOfTheWeek((prev) => {
+      const updated = prev.filter((p) => p.id !== photoId);
+      localStorage.setItem('app_photos_of_the_week', JSON.stringify(updated));
+      return updated;
+    });
+    showAlert('Foto entfernt', `Das Bild wurde erfolgreich entfernt. Begründung: "${reason}"`, 'warning');
+  };
+
+  const winnerPhoto = photosOfTheWeek.find((p) => p.is_winner) ||
+    [...photosOfTheWeek].sort((a, b) => (b.votes?.length || 0) - (a.votes?.length || 0))[0];
+
   // Next Event for Navbar Ticker
   const nextEvent = events.length > 0 ? events[0] : null;
 
@@ -335,6 +577,7 @@ export default function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
         nextEvent={nextEvent}
+        trips={trips}
         onlineCount={1}
         onlineUsers={[currentUser?.username || 'Nican']}
         unreadUserNotifs={userNotifs.filter((n) => !n.is_read).length}
@@ -342,6 +585,7 @@ export default function App() {
         onOpenAuth={() => setAuthModalOpen(true)}
         onOpenUserNotifs={() => setUserNotifsOpen(true)}
         onOpenAdminNotifs={() => setAdminNotifsOpen(true)}
+        onOpenLeaderboard={() => setLeaderboardModalOpen(true)}
         onOpenPublicProfile={(uname) => {
           setPublicProfileUser(uname);
           setCurrentView('public_profile');
@@ -353,11 +597,37 @@ export default function App() {
       {/* Main View Container */}
       <main className="flex-1 pt-[80px] pb-28 md:pb-12">
         {currentView === 'landing' && (
-          <LandingView crewMembers={crewMembers} pixelOfMonth={pixelOfMonth} onNavigate={setCurrentView} />
+          <LandingView
+            crewMembers={crewMembers}
+            photoOfTheWeek={winnerPhoto}
+            onNavigate={setCurrentView}
+          />
         )}
 
         {currentView === 'dashboard' && currentUser && (
-          <DashboardView currentUser={currentUser} onNavigate={setCurrentView} />
+          <DashboardView
+            currentUser={currentUser}
+            trips={trips}
+            spotCheckins={spotCheckins}
+            spotOfTheWeek={spotOfTheWeek}
+            allUsers={allUsers}
+            photosOfTheWeek={photosOfTheWeek}
+            events={events}
+            bikes={bikes}
+            marketItems={marketItems}
+            routes={routes}
+            topics={topics}
+            mapPins={mapPins}
+            onNavigate={setCurrentView}
+            onOpenLeaderboardModal={() => setLeaderboardModalOpen(true)}
+            onOpenAddTripModal={() => setAddTripModalOpen(true)}
+            onSpotCheckin={handleSpotCheckin}
+            onVotePhoto={handleVotePhoto}
+            onSubmitPhoto={handleSubmitPhoto}
+            onSetWinnerPhoto={handleSetWinnerPhoto}
+            onDeletePhoto={handleDeletePhoto}
+            showAlert={showAlert}
+          />
         )}
 
         {currentView === 'garage' && currentUser && (
@@ -389,8 +659,24 @@ export default function App() {
                 }
               });
             }}
-            onLikeBike={(id) => {
-              setBikes(bikes.map((b) => (b.id === id ? { ...b, likes: [...(b.likes || []), currentUser.username] } : b)));
+            onLikeBike={async (id) => {
+              if (!currentUser) return;
+              const targetBike = bikes.find((b) => b.id === id);
+              if (!targetBike) return;
+
+              const currentLikes = Array.isArray(targetBike.likes) ? targetBike.likes : [];
+              const hasLiked = currentLikes.includes(currentUser.username);
+              const newLikes = hasLiked
+                ? currentLikes.filter((u) => u !== currentUser.username)
+                : [...currentLikes, currentUser.username];
+
+              setBikes(bikes.map((b) => (b.id === id ? { ...b, likes: newLikes } : b)));
+
+              try {
+                await supabase.from('pixel_garage').update({ likes: newLikes }).eq('id', id);
+              } catch (e) {
+                console.error('Failed to update bike likes in Supabase', e);
+              }
             }}
             onCommentBike={(id, text) => {
               setBikes(
@@ -440,33 +726,74 @@ export default function App() {
             mapPins={mapPins}
             allUsers={allUsers}
             onAddEvent={async (evData) => {
-              const newEv: CrewEvent = { ...evData, id: Date.now().toString(), participants: [currentUser.email] };
-              setEvents([...events, newEv]);
-              await supabase.from('crew_events').insert([{ ...evData, participants: [currentUser.email] }]);
-              showAlert('Erfolg', 'Event veröffentlich!', 'success');
+              const userIdent = currentUser.email || currentUser.username;
+              const newEv: CrewEvent = { ...evData, id: Date.now().toString(), participants: [userIdent] };
+              const updated = [...events, newEv];
+              setEvents(updated);
+              try {
+                localStorage.setItem('app_events', JSON.stringify(updated));
+              } catch (e) {}
+              await supabase.from('crew_events').insert([{ ...evData, id: newEv.id, participants: [userIdent] }]);
+              showAlert('Erfolg', 'Event veröffentlicht!', 'success');
             }}
             onEditEvent={async (id, evData) => {
-              setEvents(events.map((e) => (e.id === id ? { ...e, ...evData } : e)));
+              const updated = events.map((e) => (e.id === id ? { ...e, ...evData } : e));
+              setEvents(updated);
+              try {
+                localStorage.setItem('app_events', JSON.stringify(updated));
+              } catch (e) {}
               await supabase.from('crew_events').update(evData).eq('id', id);
               showAlert('Erfolg', 'Event bearbeitet.', 'success');
             }}
             onDeleteEvent={(id) => {
               showConfirm('Event Löschen', 'Event wirklich absagen?', async () => {
-                setEvents(events.filter((e) => e.id !== id));
+                const updated = events.filter((e) => e.id !== id);
+                setEvents(updated);
+                try {
+                  localStorage.setItem('app_events', JSON.stringify(updated));
+                } catch (e) {}
                 await supabase.from('crew_events').delete().eq('id', id);
               });
             }}
             onToggleParticipation={async (id) => {
-              setEvents(
-                events.map((e) => {
-                  if (e.id === id) {
-                    const has = e.participants.includes(currentUser.email);
-                    const updated = has ? e.participants.filter((p) => p !== currentUser.email) : [...e.participants, currentUser.email];
-                    return { ...e, participants: updated };
-                  }
-                  return e;
-                })
-              );
+              const userIdent = currentUser.username || currentUser.email;
+              const updatedEvents = events.map((e) => {
+                if (e.id === id) {
+                  const currentArr = Array.isArray(e.participants) ? e.participants : [];
+                  const has = currentArr.some(
+                    (p) =>
+                      p === currentUser.email ||
+                      p === currentUser.username ||
+                      (currentUser.email && p.toLowerCase() === currentUser.email.toLowerCase()) ||
+                      (currentUser.username && p.toLowerCase() === currentUser.username.toLowerCase())
+                  );
+                  const updatedParts = has
+                    ? currentArr.filter(
+                        (p) =>
+                          p !== currentUser.email &&
+                          p !== currentUser.username &&
+                          (!currentUser.email || p.toLowerCase() !== currentUser.email.toLowerCase()) &&
+                          (!currentUser.username || p.toLowerCase() !== currentUser.username.toLowerCase())
+                      )
+                    : [...currentArr, userIdent];
+                  return { ...e, participants: updatedParts };
+                }
+                return e;
+              });
+
+              setEvents(updatedEvents);
+              try {
+                localStorage.setItem('app_events', JSON.stringify(updatedEvents));
+              } catch (e) {}
+
+              const targetEv = updatedEvents.find((e) => e.id === id);
+              if (targetEv) {
+                try {
+                  await supabase.from('crew_events').update({ participants: targetEv.participants }).eq('id', id);
+                } catch (e) {
+                  console.error('Failed to update event participants in Supabase', e);
+                }
+              }
             }}
             onCalculateMeetingPoint={(ev) => {
               showAlert('Idealer Treffpunkt', `Fairster Mittelpunkt für "${ev.title}" berechnet nahe Stuttgart / Karlsbad!`, 'success');
@@ -547,6 +874,7 @@ export default function App() {
             currentUser={currentUser}
             mapPins={mapPins}
             pois={pois}
+            showAlert={showAlert}
             onSavePin={async (zip, city, bikesInput) => {
               try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${zip} ${city}`)}`);
@@ -554,8 +882,19 @@ export default function App() {
                 if (data && data[0]) {
                   const lat = parseFloat(data[0].lat);
                   const lng = parseFloat(data[0].lon);
-                  const newPin: MapPin = { email: currentUser.email, username: currentUser.username, city: `${zip} ${city}`, bike: bikesInput, lat, lng };
-                  setMapPins([...mapPins.filter((p) => p.email !== currentUser.email), newPin]);
+                  const existingPin = mapPins.find((p) => p.email === currentUser.email || p.username === currentUser.username);
+                  const newPin: MapPin = {
+                    email: currentUser.email,
+                    username: currentUser.username,
+                    city: `${zip} ${city}`,
+                    bike: bikesInput,
+                    lat,
+                    lng,
+                    isLive: existingPin?.isLive,
+                    lastLiveUpdate: existingPin?.lastLiveUpdate,
+                    liveNote: existingPin?.liveNote,
+                  };
+                  setMapPins([...mapPins.filter((p) => p.email !== currentUser.email && p.username !== currentUser.username), newPin]);
                   await supabase.from('map_pins').upsert([newPin], { onConflict: 'email' });
                   showAlert('Erfolg', 'Dein Standort auf der PixelMap wurde gespeichert!', 'success');
                 } else {
@@ -565,10 +904,35 @@ export default function App() {
                 showAlert('Fehler', 'Standortabfrage fehlgeschlagen.', 'danger');
               }
             }}
+            onUpdateLivePin={async (lat, lng, isLive, liveNote) => {
+              const existingPin = mapPins.find((p) => p.email === currentUser.email || p.username === currentUser.username);
+              const updatedPin: MapPin = {
+                email: currentUser.email,
+                username: currentUser.username,
+                city: existingPin?.city || 'Live unterwegs 🏍️',
+                bike: existingPin?.bike || '',
+                lat,
+                lng,
+                isLive,
+                lastLiveUpdate: isLive ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : undefined,
+                liveNote: isLive ? (liveNote !== undefined ? liveNote : existingPin?.liveNote) : undefined,
+              };
+              const updatedList = [...mapPins.filter((p) => p.email !== currentUser.email && p.username !== currentUser.username), updatedPin];
+              setMapPins(updatedList);
+              try {
+                await supabase.from('map_pins').upsert([updatedPin], { onConflict: 'email' });
+              } catch (e) {}
+            }}
             onAddPoi={async (poiData) => {
               setPois([...pois, poiData]);
               await supabase.from('custom_pois').insert([poiData]);
               showAlert('Erfolg', 'POI wurde zur Karte hinzugefügt!', 'success');
+            }}
+            onSaveRecordedRoute={async (title, distance, gpxText) => {
+              const newR: GpxRoute = { id: Date.now().toString(), title, distance, gpx_data: gpxText, created_by: currentUser.username };
+              setRoutes([newR, ...routes]);
+              await supabase.from('gpx_routes').insert([{ id: newR.id, title, distance, gpx_data: gpxText, created_by: currentUser.username }]);
+              showAlert('Erfolg', 'Deine gefahrene Route wurde als GPX-Tour gespeichert!', 'success');
             }}
           />
         )}
@@ -580,7 +944,82 @@ export default function App() {
             invites={invitesList}
             appeals={appeals}
             crewMembers={crewMembers}
-            pixelOfMonth={pixelOfMonth}
+            events={events}
+            onSendInactivityWarning={async (targetUsername) => {
+              const msg = `⚠️ WICHTIGER COMMUNITY-HINWEIS: Du warst seit über 3 Monaten in der Biker-Saison (März–November) inaktiv und hast an keinen Events teilgenommen. Bitte melde dich in der App an oder nimm an Ausfahrten teil, da dein Profil sonst in Kürze wegen Inaktivität aus der Pixel Rider Community entfernt wird!`;
+              const notifObj: UserNotification = {
+                id: Date.now().toString() + '-' + Math.random().toString(36).substring(2, 5),
+                target_username: targetUsername,
+                message: msg,
+                reason: 'Saison-Inaktivitätswarnung (Drohender Community-Kick)',
+                type: 'danger',
+                is_read: false,
+                created_by: currentUser.username,
+                created_at: new Date().toISOString(),
+              };
+              try {
+                await supabase.from('user_notifications').insert([notifObj]);
+                setUserNotifs((prev) => [notifObj, ...prev]);
+                showAlert('Warnung gesendet', `Inaktivitäts-Warnung erfolgreich an @${targetUsername} gesendet!`, 'success');
+              } catch (e) {
+                showAlert('Fehler', 'Konnte Benachrichtigung nicht senden.', 'danger');
+              }
+            }}
+            onSendInactivityWarningToAll={async () => {
+              const getDaysSinceLogin = (u: User) => {
+                if (!u.last_login) return null;
+                const d = new Date(u.last_login);
+                if (isNaN(d.getTime())) return null;
+                return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+              };
+
+              const getUserEventCount = (u: User) => {
+                const uName = u.username.toLowerCase();
+                const uEmail = u.email ? u.email.toLowerCase() : '';
+                return events.filter((e) => {
+                  const parts = e.participants || [];
+                  return parts.some((p) => p.toLowerCase() === uName || (uEmail && p.toLowerCase() === uEmail)) || (e.created_by && e.created_by.toLowerCase() === uName);
+                }).length;
+              };
+
+              const inactiveUsers = allUsers.filter((u) => {
+                if (u.username.toLowerCase() === 'nican' || u.role === 'admin') return false;
+                const days = getDaysSinceLogin(u);
+                const evs = getUserEventCount(u);
+                return (days === null || days > 90) && evs === 0;
+              });
+
+              if (inactiveUsers.length === 0) {
+                showAlert('Keine Inaktiven', 'Aktuell gibt es keine inaktiven Mitglieder, die gewarnt werden müssten.', 'warning');
+                return;
+              }
+
+              showConfirm(
+                'Warnung an alle Inaktiven',
+                `Möchtest du wirklich eine Inaktivitäts- & Kick-Warnung an ALLE ${inactiveUsers.length} inaktiven Mitglieder senden?`,
+                async () => {
+                  const msg = `⚠️ WICHTIGER COMMUNITY-HINWEIS: Du warst seit über 3 Monaten in der Biker-Saison (März–November) inaktiv und hast an keinen Events teilgenommen. Bitte melde dich in der App an oder nimm an Ausfahrten teil, da dein Profil sonst in Kürze wegen Inaktivität aus der Pixel Rider Community entfernt wird!`;
+                  const notifsToInsert: UserNotification[] = inactiveUsers.map((u, idx) => ({
+                    id: (Date.now() + idx).toString() + '-' + Math.random().toString(36).substring(2, 5),
+                    target_username: u.username,
+                    message: msg,
+                    reason: 'Saison-Inaktivitätswarnung (Drohender Community-Kick)',
+                    type: 'danger',
+                    is_read: false,
+                    created_by: currentUser.username,
+                    created_at: new Date().toISOString(),
+                  }));
+
+                  try {
+                    await supabase.from('user_notifications').insert(notifsToInsert);
+                    setUserNotifs((prev) => [...notifsToInsert, ...prev]);
+                    showAlert('Warnung Versendet', `Inaktivitäts-Warnung an alle ${inactiveUsers.length} inaktiven Biker gesendet!`, 'success');
+                  } catch (e) {
+                    showAlert('Fehler', 'Konnte Massen-Benachrichtigung nicht senden.', 'danger');
+                  }
+                }
+              );
+            }}
             onGenerateInvite={async () => {
               const code = 'RIDER-' + Math.random().toString(36).substring(2, 7).toUpperCase();
               const newInv = { code, created_by: currentUser.username, is_used: false };
@@ -632,13 +1071,6 @@ export default function App() {
                 await supabase.from('crew_members').delete().eq('id', id);
               });
             }}
-            onSetPixelOfMonth={(pixel) => {
-              setPixelOfMonth(pixel);
-              try {
-                localStorage.setItem('app_pixel_of_month', JSON.stringify(pixel));
-              } catch (e) {}
-              showAlert('Pixel des Monats Gekürt! 🏆', `${pixel.username} wurde als Pixel des Monats auf der Landingpage hervorgehoben!`, 'success');
-            }}
           />
         )}
 
@@ -648,25 +1080,57 @@ export default function App() {
             userMarketItems={marketItems.filter((m) => m.author === currentUser.username)}
             userGarageBikes={bikes.filter((b) => b.owner === currentUser.username)}
             initialMapBikes={mapPins.find((p) => p.email === currentUser.email || p.username === currentUser.username)?.bike || ''}
+            trips={trips}
+            forumTopics={topics}
+            gpxRoutes={routes}
+            crewEvents={events}
+            mapPins={mapPins}
+            showAlert={showAlert}
             onSaveProfile={async ({ email, pass, ig, tt, yt, avatarUrl, mapBikes }) => {
-              const updatedUser = { ...currentUser, email, social_ig: ig, social_tiktok: tt, social_youtube: yt, avatar_url: avatarUrl };
+              const updatedUser: User = {
+                ...currentUser,
+                email,
+                social_ig: ig,
+                social_tiktok: tt,
+                social_youtube: yt,
+                avatar_url: avatarUrl,
+              };
               setCurrentUser(updatedUser);
-              localStorage.setItem('app_user', JSON.stringify(updatedUser));
+              try {
+                localStorage.setItem('app_user', JSON.stringify(updatedUser));
+              } catch (e) {
+                console.error('Failed to save app_user to localStorage', e);
+              }
 
               // Also update user in allUsers list if present
-              setAllUsers((prev) => prev.map((u) => u.username === currentUser.username ? updatedUser : u));
+              setAllUsers((prev) => prev.map((u) => u.username.toLowerCase() === currentUser.username.toLowerCase() ? updatedUser : u));
 
-              const updates: any = { email, social_ig: ig, social_tiktok: tt, social_youtube: yt, avatar_url: avatarUrl };
+              const updates: any = {
+                email,
+                social_ig: ig,
+                social_tiktok: tt,
+                social_youtube: yt,
+                avatar_url: avatarUrl,
+              };
               if (pass) updates.password = await hashPassword(pass);
 
-              await supabase.from('users').update(updates).eq('username', currentUser.username);
+              try {
+                const { error } = await supabase.from('users').update(updates).eq('username', currentUser.username);
+                if (error) {
+                  await supabase.from('users').upsert([{ username: currentUser.username, ...updates }], { onConflict: 'username' });
+                }
+              } catch (e) {
+                console.error('Failed to update user in Supabase', e);
+              }
 
               if (mapBikes !== undefined) {
                 const existingPin = mapPins.find((p) => p.email === currentUser.email || p.username === currentUser.username);
                 if (existingPin) {
                   const updatedPin = { ...existingPin, bike: mapBikes };
                   setMapPins(mapPins.map((p) => (p.email === currentUser.email || p.username === currentUser.username ? updatedPin : p)));
-                  await supabase.from('map_pins').upsert([updatedPin], { onConflict: 'email' });
+                  try {
+                    await supabase.from('map_pins').upsert([updatedPin], { onConflict: 'email' });
+                  } catch (e) {}
                 }
               }
 
@@ -793,6 +1257,35 @@ export default function App() {
           setAdminResetUsers(adminResetUsers.filter((u) => u.username !== username));
           showAlert('Zurückgesetzt', `Passwort für ${username} wurde auf "1234" zurückgesetzt.`, 'success');
         }}
+        onSendInactivityWarning={async (targetUsername, reason) => {
+          const newNotif: UserNotification = {
+            id: Date.now().toString(),
+            username: targetUsername,
+            message: reason,
+            is_read: false,
+            created_at: new Date().toISOString(),
+            type: 'inactivity_warning',
+          };
+          setUserNotifs([newNotif, ...userNotifs]);
+          try {
+            await supabase.from('user_notifications').insert([{
+              username: targetUsername,
+              message: reason,
+              is_read: false,
+              type: 'inactivity_warning',
+            }]);
+          } catch (e) {}
+          showAlert('Push-Warnung Gesendet 🔔', `Inaktivitäts-Warnung an ${targetUsername} übermittelt.`, 'success');
+        }}
+        onRemoveInactiveUser={async (targetUsername) => {
+          showConfirm('Mitglied Entfernen', `Möchtest du ${targetUsername} wirklich wegen Inaktivität aus der Community entfernen?`, async () => {
+            setAllUsers(allUsers.filter((u) => u.username.toLowerCase() !== targetUsername.toLowerCase()));
+            try {
+              await supabase.from('users').delete().eq('username', targetUsername);
+            } catch (e) {}
+            showAlert('Entfernt', `${targetUsername} wurde aus der Community entfernt.`, 'success');
+          });
+        }}
         previewGpx={previewGpx}
         onCloseGpxPreview={() => setPreviewGpx(null)}
         onDownloadGpx={(r) => {
@@ -825,6 +1318,14 @@ export default function App() {
         onRequestUsernameChange={async (newName) => {
           showAlert('Anfrage Gesendet', `Dein Namensänderungswunsch auf "${newName}" wurde an die Admins übermittelt.`, 'success');
         }}
+        leaderboardModalOpen={leaderboardModalOpen}
+        onCloseLeaderboardModal={() => setLeaderboardModalOpen(false)}
+        addTripModalOpen={addTripModalOpen}
+        onCloseAddTripModal={() => setAddTripModalOpen(false)}
+        onAddTrip={handleAddTrip}
+        onOpenAddTripModal={() => setAddTripModalOpen(true)}
+        trips={trips}
+        allUsers={allUsers}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { User, CrewEvent, GpxRoute, ForumTopic, GarageBike, MarketItem, UserNotification, DirectMessage } from '../types';
-import { X, CheckCircle, AlertTriangle, AlertOctagon, Key, Upload, Download, MapPin, Send, Trash2, Edit, Shield, MessageSquare, Map } from 'lucide-react';
+import { User, CrewEvent, GpxRoute, ForumTopic, GarageBike, MarketItem, UserNotification, DirectMessage, TripEntry } from '../types';
+import { X, CheckCircle, AlertTriangle, AlertOctagon, Key, Upload, Download, MapPin, Send, Trash2, Edit, Shield, MessageSquare, Map, Trophy, Plus, Flame, Award } from 'lucide-react';
+import { getLeaderboard, getUserRankBadge } from '../lib/challengeUtils';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -223,6 +224,8 @@ interface ModalsProps {
   onApproveInvite: (username: string) => void;
   onDismissInvite: (username: string) => void;
   onResetPasswordAdmin: (username: string) => void;
+  onSendInactivityWarning?: (username: string, reason: string) => void;
+  onRemoveInactiveUser?: (username: string) => void;
 
   // GPX Preview Modal
   previewGpx: GpxRoute | null;
@@ -240,6 +243,16 @@ interface ModalsProps {
   usernameChangeOpen: boolean;
   onCloseUsernameChange: () => void;
   onRequestUsernameChange: (newName: string) => void;
+
+  // Leaderboard & Trip Modals
+  leaderboardModalOpen?: boolean;
+  onCloseLeaderboardModal?: () => void;
+  addTripModalOpen?: boolean;
+  onCloseAddTripModal?: () => void;
+  onAddTrip?: (distanceKm: number, description?: string, title?: string) => void;
+  onOpenAddTripModal?: () => void;
+  trips?: TripEntry[];
+  allUsers?: User[];
 }
 
 export const Modals: React.FC<ModalsProps> = ({
@@ -268,6 +281,8 @@ export const Modals: React.FC<ModalsProps> = ({
   onApproveInvite,
   onDismissInvite,
   onResetPasswordAdmin,
+  onSendInactivityWarning,
+  onRemoveInactiveUser,
   previewGpx,
   onCloseGpxPreview,
   onDownloadGpx,
@@ -279,6 +294,14 @@ export const Modals: React.FC<ModalsProps> = ({
   usernameChangeOpen,
   onCloseUsernameChange,
   onRequestUsernameChange,
+  leaderboardModalOpen,
+  onCloseLeaderboardModal,
+  addTripModalOpen,
+  onCloseAddTripModal,
+  onAddTrip,
+  onOpenAddTripModal,
+  trips = [],
+  allUsers = [],
 }) => {
   // Local state for Auth tab
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
@@ -294,6 +317,11 @@ export const Modals: React.FC<ModalsProps> = ({
   const [forgotUser, setForgotUser] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [newNameInput, setNewNameInput] = useState('');
+
+  // Local state for Trip entry
+  const [tripKmInput, setTripKmInput] = useState('');
+  const [tripTitleInput, setTripTitleInput] = useState('');
+  const [tripDescInput, setTripDescInput] = useState('');
 
   return (
     <>
@@ -781,10 +809,92 @@ export const Modals: React.FC<ModalsProps> = ({
               )}
 
               {adminResetUsers.length === 0 && adminInviteUsers.length === 0 && (
-                <div className="text-center py-8">
-                  <CheckCircle className="w-12 h-12 text-emerald-500/50 mx-auto mb-2" />
-                  <p className="text-sm font-bold text-emerald-400">Alles erledigt!</p>
-                  <p className="text-xs text-slate-500">Es liegen keine offenen Anfragen vor.</p>
+                <div className="text-center py-4">
+                  <CheckCircle className="w-8 h-8 text-emerald-500/50 mx-auto mb-1" />
+                  <p className="text-xs font-bold text-emerald-400">Keine offenen Resets oder Invites</p>
+                </div>
+              )}
+
+              {/* Feature C: Inactive Users Section (März-November Check) */}
+              {allUsers.length > 0 && (
+                <div className="pt-4 border-t border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                      Inaktivitäts-Überwachung (März–Nov Saison)
+                    </h4>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">
+                      Saison-Regel: {new Date().getMonth() >= 2 && new Date().getMonth() <= 10 ? 'Aktiv (März-Nov)' : 'Inaktiv (Winter)'}
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 mb-3">
+                    Mitglieder, die in der Saison seit über 3 Monaten inaktiv sind, erhalten eine Push-Warnung vor dem Community-Ausschluss.
+                  </p>
+
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {allUsers
+                      .filter((u) => !u.isAdmin)
+                      .map((u) => {
+                        const lastDate = u.last_active_at || u.last_login;
+                        const daysInactive = lastDate
+                          ? Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24))
+                          : 120;
+                        const isInactive = daysInactive >= 90;
+
+                        return (
+                          <div
+                            key={u.username}
+                            className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                              isInactive ? 'bg-red-950/20 border-red-500/40' : 'bg-slate-900 border-slate-800'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <strong className="text-white text-xs">{u.username}</strong>
+                                {isInactive && (
+                                  <span className="text-[9px] bg-red-600 text-white font-bold px-1.5 py-0.5 rounded uppercase">
+                                    Inaktiv ({daysInactive} Tage)
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[11px] text-slate-400 block">{u.email}</span>
+                              <span className="text-[10px] text-slate-500">
+                                Letzte Aktivität: {lastDate ? new Date(lastDate).toLocaleDateString('de-DE') : 'Vor > 3 Monaten'}
+                              </span>
+                            </div>
+
+                            <div className="flex gap-1.5 self-end sm:self-center">
+                              <button
+                                onClick={() => {
+                                  if (onSendInactivityWarning) {
+                                    onSendInactivityWarning(
+                                      u.username,
+                                      `⚠️ Inaktivitäts-Warnung: Du warst seit ${daysInactive} Tagen nicht mehr in der Web-App aktiv. Bitte melde dich an oder interagiere in der Community, um eine Deaktivierung deines Kontos zu vermeiden.`
+                                    );
+                                  }
+                                }}
+                                className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-[10px] uppercase px-2.5 py-1.5 rounded-lg border border-amber-500/40 cursor-pointer flex items-center gap-1"
+                                title="Push-Erinnerung vor Ausschluss senden"
+                              >
+                                🔔 Push-Warnung
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (onRemoveInactiveUser) {
+                                    onRemoveInactiveUser(u.username);
+                                  }
+                                }}
+                                className="bg-red-900/40 hover:bg-red-800/60 text-red-300 font-bold text-[10px] uppercase px-2.5 py-1.5 rounded-lg border border-red-500/40 cursor-pointer flex items-center gap-1"
+                                title="Inaktives Mitglied entfernen"
+                              >
+                                🗑️ Entfernen
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </div>
@@ -915,6 +1025,211 @@ export const Modals: React.FC<ModalsProps> = ({
                   className="flex-1 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold uppercase text-sm shadow-lg transition-all border-0 cursor-pointer"
                 >
                   Beantragen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Feature A: Leaderboard Modal */}
+      {leaderboardModalOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="max-w-2xl w-full rounded-2xl bg-slate-950 border border-amber-500/50 p-6 relative shadow-2xl flex flex-col max-h-[85vh]">
+            <button
+              onClick={onCloseLeaderboardModal}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white border-0 bg-transparent cursor-pointer p-1 rounded-full hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4 border-b border-slate-800 pb-4">
+              <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl border border-amber-500/40">
+                <Trophy className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black uppercase text-amber-400 tracking-wider">
+                  Saison Leaderboard 2026
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Gesamtkilometer aller Ausfahrten seit dem 01.01.2026
+                </p>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+              {getLeaderboard(trips, allUsers).map((u) => {
+                const rankBadge = getUserRankBadge(u.totalKm);
+                const isMine = u.username.toLowerCase() === currentUsername.toLowerCase();
+                const medal =
+                  u.rank === 1 ? '👑 #1 GOLD' : u.rank === 2 ? '🥈 #2 SILBER' : u.rank === 3 ? '🥉 #3 BRONZE' : `#${u.rank}`;
+
+                return (
+                  <div
+                    key={u.username}
+                    className={`p-4 rounded-xl border flex items-center justify-between transition-all ${
+                      isMine
+                        ? 'bg-amber-950/40 border-amber-500/80 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                        : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`w-16 text-center text-[11px] font-black px-2 py-1 rounded-lg ${
+                          u.rank === 1
+                            ? 'bg-amber-400 text-black'
+                            : u.rank === 2
+                            ? 'bg-slate-300 text-black'
+                            : u.rank === 3
+                            ? 'bg-amber-800 text-amber-200'
+                            : 'bg-slate-800 text-slate-400'
+                        }`}
+                      >
+                        {medal}
+                      </span>
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <strong className="text-white text-sm">{u.username}</strong>
+                          {isMine && (
+                            <span className="text-[10px] bg-amber-500 text-black font-extrabold px-1.5 py-0.5 rounded uppercase">
+                              DU
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${rankBadge.badgeClass}`}>
+                            {rankBadge.icon} {rankBadge.title}
+                          </span>
+                          <span className="text-[11px] text-amber-400/90 font-bold flex items-center gap-1">
+                            <Flame className="w-3 h-3 text-amber-400" /> {u.streakWeeks} W. Streak
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-base font-black text-amber-400 block">{u.totalKm} km</span>
+                      <span className="text-[10px] text-slate-400">{u.tripCount} Touren</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 mt-4 flex justify-between items-center gap-3">
+              <button
+                onClick={() => {
+                  if (onCloseLeaderboardModal) onCloseLeaderboardModal();
+                  if (onOpenAddTripModal) onOpenAddTripModal();
+                }}
+                className="flex-1 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-xs rounded-xl shadow-lg transition-all border-0 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Eigene Fahrt eintragen
+              </button>
+              <button
+                onClick={onCloseLeaderboardModal}
+                className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold uppercase text-xs rounded-xl border border-slate-800 transition-colors cursor-pointer"
+              >
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feature A: Add Trip Modal */}
+      {addTripModalOpen && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="max-w-md w-full rounded-2xl bg-slate-950 border border-amber-500/60 p-6 relative shadow-2xl">
+            <button
+              onClick={onCloseAddTripModal}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white border-0 bg-transparent cursor-pointer p-1 rounded-full hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl border border-amber-500/40">
+                <Plus className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black uppercase text-amber-400">Fahrt eintragen</h3>
+                <p className="text-xs text-slate-400">Kilometer für das Saison-Leaderboard 2026 erfassen</p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const dist = parseFloat(tripKmInput);
+                if (!isNaN(dist) && dist > 0 && onAddTrip) {
+                  onAddTrip(dist, tripDescInput.trim(), tripTitleInput.trim() || 'Ausfahrt');
+                  setTripKmInput('');
+                  setTripTitleInput('');
+                  setTripDescInput('');
+                  if (onCloseAddTripModal) onCloseAddTripModal();
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-bold uppercase text-amber-400 mb-1">
+                  Gefahrene Distanz (in Kilometer) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  value={tripKmInput}
+                  onChange={(e) => setTripKmInput(e.target.value)}
+                  placeholder="z.B. 185.5"
+                  required
+                  className="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-4 py-3 text-xl font-black text-amber-300 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
+                  Titel der Tour (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={tripTitleInput}
+                  onChange={(e) => setTripTitleInput(e.target.value)}
+                  placeholder="z.B. Schwarzwald Kurvenjagd"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
+                  Notiz / Beschreibung (Optional)
+                </label>
+                <textarea
+                  value={tripDescInput}
+                  onChange={(e) => setTripDescInput(e.target.value)}
+                  rows={2}
+                  placeholder="z.B. Bomben-Wetter, geile Strecken, Kaffeestopp am Johanniskreuz"
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={onCloseAddTripModal}
+                  className="flex-1 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-900 transition-colors bg-transparent cursor-pointer text-xs uppercase"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-xs shadow-lg transition-all border-0 cursor-pointer"
+                >
+                  Kilometer Speichern
                 </button>
               </div>
             </form>

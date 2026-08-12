@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { CrewMember, AppView, PixelOfMonth } from '../types';
-import { Users, Wrench, MessageSquare, Calendar, ShieldCheck, Instagram, Youtube, Sparkles, Award, Trophy, Star } from 'lucide-react';
+import { CrewMember, AppView, PhotoOfTheWeek } from '../types';
+import { Users, Wrench, MessageSquare, Calendar, ShieldCheck, Instagram, Youtube, Sparkles, Star, Camera } from 'lucide-react';
 
 interface LandingViewProps {
   crewMembers: CrewMember[];
-  pixelOfMonth?: PixelOfMonth | null;
+  photoOfTheWeek?: PhotoOfTheWeek | null;
   onNavigate: (view: AppView) => void;
 }
 
-export const LandingView: React.FC<LandingViewProps> = ({ crewMembers, pixelOfMonth, onNavigate }) => {
+export const LandingView: React.FC<LandingViewProps> = ({ crewMembers, photoOfTheWeek, onNavigate }) => {
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
 
   const toggleFlip = (id: string) => {
@@ -78,108 +78,81 @@ export const LandingView: React.FC<LandingViewProps> = ({ crewMembers, pixelOfMo
         </div>
       </div>
 
-      {/* DIVIDER LINE BEFORE PIXEL DES MONATS */}
-      {pixelOfMonth && (
-        <>
-          <div className="my-12 border-t-2 border-purple-900/60 relative">
-            <div className="absolute left-1/2 -translate-x-1/2 -top-3 px-4 bg-[#0a0314] text-amber-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 border border-purple-800/60 rounded-full py-0.5 shadow-md">
-              <Star className="w-3.5 h-3.5 fill-amber-400" /> COMMUNITY HIGHLIGHT <Star className="w-3.5 h-3.5 fill-amber-400" />
+      {/* BILD DER WOCHE (CREW VOTE HIGHLIGHT) */}
+      {photoOfTheWeek && (
+        <div className="my-12">
+          {/* Divider */}
+          <div className="my-8 border-t-2 border-amber-500/40 relative">
+            <div className="absolute left-1/2 -translate-x-1/2 -top-3 px-4 bg-[#0a0314] text-amber-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 border border-amber-500/50 rounded-full py-0.5 shadow-md">
+              <Camera className="w-3.5 h-3.5 text-amber-400" /> CREW-VOTING HIGHLIGHT <Camera className="w-3.5 h-3.5 text-amber-400" />
             </div>
           </div>
 
-          {/* PIXEL DES MONATS (FEATURED SPOTLIGHT SECTION) */}
-          <div className="mb-16 relative group">
-            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 opacity-75 blur-xl group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
+          <div className="relative group">
+            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-purple-600 via-amber-500 to-yellow-400 opacity-60 blur-xl group-hover:opacity-90 transition duration-700" />
 
-            <div className="relative bg-slate-950/95 border-2 border-amber-400 rounded-3xl p-6 md:p-10 text-left shadow-2xl flex flex-col md:flex-row items-center gap-8">
-              {/* Left Image / Avatar */}
-              <div className="w-full md:w-1/2 lg:w-5/12 flex-shrink-0 relative rounded-2xl overflow-hidden border-2 border-amber-400/80 shadow-[0_0_25px_rgba(250,204,21,0.3)] bg-black h-80 md:h-96">
+            <div className="relative bg-slate-950/95 border-2 border-amber-500/80 rounded-3xl p-6 md:p-8 text-left shadow-2xl flex flex-col md:flex-row items-center gap-8">
+              {/* Left Image */}
+              <div className="w-full md:w-1/2 lg:w-5/12 flex-shrink-0 relative rounded-2xl overflow-hidden border border-amber-500/50 shadow-2xl bg-black h-80 md:h-96">
                 <img
-                  src={pixelOfMonth.image_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1000'}
-                  alt={pixelOfMonth.username}
-                  className="w-full h-full object-cover"
+                  src={photoOfTheWeek.image_url}
+                  alt={photoOfTheWeek.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
 
                 <div className="absolute top-4 left-4 bg-amber-500 text-black font-black text-xs uppercase px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 border border-amber-300">
-                  <Trophy className="w-4 h-4 fill-black" />
-                  PIXEL DES MONATS
+                  <Camera className="w-4 h-4 text-black" />
+                  BILD DER WOCHE
                 </div>
 
-                {pixelOfMonth.bike && (
-                  <div className="absolute bottom-4 left-4 right-4 bg-black/80 backdrop-blur-md p-3 rounded-xl border border-amber-500/40">
-                    <span className="text-[10px] text-amber-300 font-bold uppercase block">Gefahrenes Bike</span>
-                    <strong className="text-xs text-white uppercase font-extrabold">{pixelOfMonth.bike}</strong>
-                  </div>
-                )}
+                <div className="absolute bottom-4 left-4 right-4 bg-black/80 backdrop-blur-md p-3 rounded-xl border border-amber-500/30">
+                  <span className="text-[10px] text-amber-300 font-bold uppercase block">Geknipst von</span>
+                  <strong className="text-sm text-white uppercase font-extrabold">@{photoOfTheWeek.author}</strong>
+                </div>
               </div>
 
               {/* Right Details */}
-              <div className="w-full md:w-1/2 lg:w-7/12 flex flex-col justify-between">
+              <div className="w-full md:w-1/2 lg:w-7/12 flex flex-col justify-between self-stretch">
                 <div>
                   <div className="flex items-center gap-2 text-amber-400 font-extrabold text-xs uppercase tracking-wider mb-2">
-                    <Star className="w-4 h-4 fill-amber-400" />
-                    Ehrung & Community-Spotlight
-                    <Star className="w-4 h-4 fill-amber-400" />
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    Intern von der Crew gewählt
                   </div>
 
-                  <h2 className="text-3xl md:text-4xl font-black uppercase text-white mb-2 leading-tight">
-                    {pixelOfMonth.username}
-                  </h2>
+                  <h3 className="text-2xl md:text-3xl font-black uppercase text-white mb-3 leading-tight">
+                    {photoOfTheWeek.title}
+                  </h3>
 
-                  <span className="inline-block bg-amber-500/20 text-amber-300 font-extrabold text-xs px-3 py-1 rounded-full border border-amber-500/40 uppercase mb-4">
-                    🏆 {pixelOfMonth.title || 'Gekürter Rider des Monats'}
-                  </span>
-
-                  <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl mb-6 relative">
-                    <p className="text-sm text-slate-200 leading-relaxed italic">
-                      "{pixelOfMonth.reason}"
-                    </p>
+                  <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-300 font-extrabold text-xs px-3.5 py-1.5 rounded-full border border-amber-500/40 uppercase mb-4">
+                    🏆 Crew-Gewinner mit {photoOfTheWeek.votes?.length || 0} Stimmen
                   </div>
+
+                  {photoOfTheWeek.description && (
+                    <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl mb-6">
+                      <p className="text-sm text-slate-200 leading-relaxed italic">
+                        "{photoOfTheWeek.description}"
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
-                  <span className="text-xs text-slate-400 font-bold flex items-center gap-1.5">
-                    <Award className="w-4 h-4 text-amber-400" /> Von Admins & Community gewählt
+                <div className="pt-4 border-t border-slate-800 flex items-center justify-between flex-wrap gap-3">
+                  <span className="text-xs text-slate-400 font-bold">
+                    Wöchentliches Voting im Crew-Bereich
                   </span>
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {pixelOfMonth.social_ig && (
-                      <a
-                        href={pixelOfMonth.social_ig.startsWith('http') ? pixelOfMonth.social_ig : `https://instagram.com/${pixelOfMonth.social_ig.replace('@', '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-pink-600 hover:bg-pink-500 text-white font-extrabold text-[11px] uppercase transition-all shadow-md"
-                      >
-                        <Instagram className="w-3.5 h-3.5" /> Instagram
-                      </a>
-                    )}
-                    {pixelOfMonth.social_tiktok && (
-                      <a
-                        href={pixelOfMonth.social_tiktok.startsWith('http') ? pixelOfMonth.social_tiktok : `https://tiktok.com/@${pixelOfMonth.social_tiktok.replace('@', '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-cyan-300 font-extrabold text-[11px] uppercase transition-all shadow-md border border-cyan-500/30"
-                      >
-                        🎵 TikTok
-                      </a>
-                    )}
-                    {pixelOfMonth.social_youtube && (
-                      <a
-                        href={pixelOfMonth.social_youtube.startsWith('http') ? pixelOfMonth.social_youtube : `https://youtube.com/@${pixelOfMonth.social_youtube.replace('@', '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-red-600 hover:bg-red-500 text-white font-extrabold text-[11px] uppercase transition-all shadow-md"
-                      >
-                        <Youtube className="w-3.5 h-3.5" /> YouTube
-                      </a>
-                    )}
-                  </div>
+                  <button
+                    onClick={() => onNavigate('dashboard')}
+                    className="px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold text-xs uppercase hover:scale-105 transition-all shadow-lg cursor-pointer border-0 flex items-center gap-2"
+                  >
+                    <Camera className="w-4 h-4" /> Im Crew-Bereich mitvoten
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* DIVIDER LINE BEFORE CREW */}

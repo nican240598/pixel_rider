@@ -1,16 +1,5 @@
 export type UserRole = 'member' | 'ehren pixel' | 'moderator' | 'admin';
 
-export interface PixelOfMonth {
-  username: string;
-  title: string;
-  reason: string;
-  image_url?: string;
-  bike?: string;
-  social_ig?: string;
-  social_tiktok?: string;
-  social_youtube?: string;
-}
-
 export interface User {
   username: string;
   email: string;
@@ -20,6 +9,7 @@ export interface User {
   invite?: string;
   is_deactivated?: boolean;
   last_login?: string;
+  last_active_at?: string;
   social_ig?: string;
   social_tiktok?: string;
   social_youtube?: string;
@@ -112,6 +102,9 @@ export interface MapPin {
   bike: string;
   lat: number;
   lng: number;
+  isLive?: boolean;
+  lastLiveUpdate?: string;
+  liveNote?: string;
 }
 
 export interface Poi {
@@ -129,10 +122,11 @@ export interface Poi {
 
 export interface UserNotification {
   id: string;
-  target_username: string;
+  target_username?: string;
+  username?: string;
   message: string;
-  reason: string;
-  type: 'warning' | 'danger' | 'success' | 'info';
+  reason?: string;
+  type: 'warning' | 'danger' | 'success' | 'info' | 'inactivity_warning';
   is_read: boolean;
   created_by?: string;
   created_at: string;
@@ -158,6 +152,46 @@ export interface MarketAppeal {
   created_at?: string;
 }
 
+export interface TripEntry {
+  id: string;
+  user_id?: string;
+  username: string;
+  distance_km: number;
+  created_at: string;
+  proof_image_url?: string;
+  title?: string;
+  description?: string;
+}
+
+export interface SpotCheckin {
+  id: string;
+  username: string;
+  spot_id: string;
+  spot_name?: string;
+  created_at: string;
+}
+
+export interface SpotOfTheWeek {
+  id: string;
+  name: string;
+  location: string;
+  lat: number;
+  lng: number;
+  image_url?: string;
+  description?: string;
+}
+
+export interface PhotoOfTheWeek {
+  id: string;
+  title: string;
+  author: string;
+  image_url: string;
+  description?: string;
+  votes: string[]; // usernames of users who voted
+  created_at?: string;
+  is_winner?: boolean;
+}
+
 export type AppView =
   | 'landing'
   | 'dashboard'
@@ -173,3 +207,17 @@ export type AppView =
   | 'public_profile'
   | 'impressum'
   | 'privacy';
+
+export interface TileConfig {
+  id: string;
+  title: string;
+  subtitle: string;
+  iconName: string;
+  colorClass: string;
+  bgIconClass: string;
+  viewTarget?: AppView;
+  colSpan: number; // 1 = ~33%, 2 = ~66%, 3 = 100%
+  minHeight: number; // in pixels (e.g. 140 - 400)
+  visible: boolean;
+  order: number;
+}

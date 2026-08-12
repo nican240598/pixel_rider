@@ -1,4 +1,4 @@
-import { CrewMember, Poi, CrewEvent, GpxRoute, ForumTopic, GarageBike, MarketItem } from '../types';
+import { CrewMember, Poi, CrewEvent, GpxRoute, ForumTopic, GarageBike, MarketItem, TripEntry, SpotCheckin, SpotOfTheWeek } from '../types';
 
 export const INITIAL_CREW: CrewMember[] = [
   {
@@ -109,3 +109,26 @@ export const INITIAL_MARKET: MarketItem[] = [
     link_ebay: 'https://ebay.de'
   }
 ];
+
+export const INITIAL_TRIPS: TripEntry[] = [
+  { id: 't-1', username: 'Nican', distance_km: 1420, created_at: '2026-08-01T10:00:00Z', title: 'Schwarzwald Kurventraum' },
+  { id: 't-2', username: 'Alex Nitro', distance_km: 980, created_at: '2026-08-05T14:30:00Z', title: 'Pfälzerwald Ausfahrt' },
+  { id: 't-3', username: 'Rider Zero', distance_km: 650, created_at: '2026-08-08T11:15:00Z', title: 'Glemseck Feierabendrunde' },
+];
+
+export const INITIAL_SPOT_OF_THE_WEEK: SpotOfTheWeek = {
+  id: 'spot-johanniskreuz',
+  name: 'Johanniskreuz (Pfälzerwald)',
+  location: 'B48 / Trippstadt',
+  lat: 49.3364,
+  lng: 7.8228,
+  image_url: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?q=80&w=1000',
+  description: 'Beliebter Motorradtreff im Pfälzerwald. Kurvenreiche Anfahrt über die B48.'
+};
+
+export const INITIAL_SPOT_CHECKINS: SpotCheckin[] = [
+  { id: 'sc-1', username: 'Nican', spot_id: 'spot-johanniskreuz', spot_name: 'Johanniskreuz (Pfälzerwald)', created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
+  { id: 'sc-2', username: 'Rider Zero', spot_id: 'spot-johanniskreuz', spot_name: 'Johanniskreuz (Pfälzerwald)', created_at: new Date(Date.now() - 3600000 * 5).toISOString() },
+  { id: 'sc-3', username: 'Alex Nitro', spot_id: 'spot-johanniskreuz', spot_name: 'Johanniskreuz (Pfälzerwald)', created_at: new Date(Date.now() - 3600000 * 24).toISOString() },
+];
+

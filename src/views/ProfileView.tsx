@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { User, MarketItem, GarageBike } from '../types';
-import { User as UserIcon, Save, Instagram, Youtube, Wrench, ShoppingBag, Edit, Trash2, Key, Bike, Plus, Camera, Upload } from 'lucide-react';
+import { User, MarketItem, GarageBike, TripEntry, ForumTopic, GpxRoute, CrewEvent, MapPin as MapPinType, TileConfig } from '../types';
+import { User as UserIcon, Save, Instagram, Youtube, Wrench, ShoppingBag, Edit, Trash2, Key, Bike, Plus, Camera, Upload, LayoutGrid, Maximize2, Minimize2, Move, Eye, EyeOff, RotateCcw, ArrowUp, ArrowDown, Map, MessageSquare, Calendar, Sliders, Check, Sparkles, MapPin } from 'lucide-react';
+import { getSavedTileLayout, saveTileLayout, resetTileLayout } from '../lib/tileUtils';
 
 interface ProfileViewProps {
   currentUser: User;
   userMarketItems: MarketItem[];
   userGarageBikes: GarageBike[];
   initialMapBikes?: string;
+  trips?: TripEntry[];
+  forumTopics?: ForumTopic[];
+  gpxRoutes?: GpxRoute[];
+  crewEvents?: CrewEvent[];
+  mapPins?: MapPinType[];
   onSaveProfile: (data: { email: string; pass?: string; ig?: string; tt?: string; yt?: string; avatarUrl?: string; mapBikes?: string }) => void;
   onRequestUsernameChange: () => void;
   onDeleteMarketItem: (id: string) => void;
   onDeleteGarageBike: (id: string) => void;
   onNavigateToGarage?: () => void;
   onNavigateToMarket?: () => void;
+  showAlert?: (title: string, message: string, type?: 'success' | 'warning' | 'danger') => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -20,15 +27,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   userMarketItems,
   userGarageBikes,
   initialMapBikes = '',
+  trips = [],
+  forumTopics = [],
+  gpxRoutes = [],
+  crewEvents = [],
+  mapPins = [],
   onSaveProfile,
   onRequestUsernameChange,
   onDeleteMarketItem,
   onDeleteGarageBike,
   onNavigateToGarage,
   onNavigateToMarket,
+  showAlert,
 }) => {
   // Dropdown section selector
-  const [activeSection, setActiveSection] = useState<'credentials' | 'name_profile' | 'garage' | 'market'>('name_profile');
+  const [activeSection, setActiveSection] = useState<'name_profile' | 'credentials' | 'garage' | 'market' | 'tile_layout'>('name_profile');
+
+  // Tile layout customization state
+  const [tilesState, setTilesState] = useState<TileConfig[]>(() => getSavedTileLayout());
 
   // Form states
   const [email, setEmail] = useState(currentUser.email || '');
@@ -40,6 +56,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   // 5 lines for PixelMap bikes
   const [mapBikeLines, setMapBikeLines] = useState<string[]>(['', '', '', '', '']);
+
+  useEffect(() => {
+    setAvatarUrl(currentUser.avatar_url || '');
+    setEmail(currentUser.email || '');
+    setIg(currentUser.social_ig || '');
+    setTt(currentUser.social_tiktok || '');
+    setYt(currentUser.social_youtube || '');
+  }, [currentUser.username, currentUser.avatar_url]);
 
   useEffect(() => {
     const raw = initialMapBikes || '';
@@ -54,16 +78,126 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     setMapBikeLines(fiveBikes);
   }, [initialMapBikes]);
 
+  const saveProfileData = (newAvatar?: string) => {
+    const targetAvatar = newAvatar !== undefined ? newAvatar : avatarUrl;
+    const combinedMapBikes = mapBikeLines.map((b) => b.trim()).filter(Boolean).join('\n');
+    onSaveProfile({
+      email,
+      pass: password || undefined,
+      ig,
+      tt,
+      yt,
+      avatarUrl: targetAvatar,
+      mapBikes: combinedMapBikes,
+    });
+  };
+
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setAvatarUrl(reader.result);
-        }
+      reader.onload = (event) => {
+        const result = typeof event.target?.result === 'string' ? event.target.result : '';
+        if (!result) return;
+
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const MAX_DIM = 350;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_DIM) {
+                height *= MAX_DIM / width;
+                width = MAX_DIM;
+              }
+            } else {
+              if (height > MAX_DIM) {
+                width *= MAX_DIM / height;
+                height = MAX_DIM;
+              }
+            }
+            canvas.width = Math.round(width);
+            canvas.height = Math.round(height);
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+              setAvatarUrl(compressedDataUrl);
+              saveProfileData(compressedDataUrl);
+              return;
+            }
+          } catch (err) {
+            console.error('Canvas compression error:', err);
+          }
+          setAvatarUrl(result);
+          saveProfileData(result);
+        };
+        img.onerror = () => {
+          setAvatarUrl(result);
+          saveProfileData(result);
+        };
+        img.src = result;
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleMoveTile = (idx: number, direction: 'up' | 'down') => {
+    if ((direction === 'up' && idx === 0) || (direction === 'down' && idx === tilesState.length - 1)) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    const updated = [...tilesState];
+    const temp = updated[idx];
+    updated[idx] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    updated.forEach((t, i) => {
+      t.order = i;
+    });
+    setTilesState(updated);
+  };
+
+  const handleSetTileWidth = (id: string, colSpan: number) => {
+    setTilesState((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, colSpan } : t))
+    );
+  };
+
+  const handleUpdateTileHeight = (id: string, deltaPx: number) => {
+    setTilesState((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const newHeight = Math.max(120, Math.min(420, t.minHeight + deltaPx));
+        return { ...t, minHeight: newHeight };
+      })
+    );
+  };
+
+  const handleSetTileHeight = (id: string, minHeight: number) => {
+    setTilesState((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, minHeight } : t))
+    );
+  };
+
+  const handleToggleTileVisibility = (id: string) => {
+    setTilesState((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, visible: !t.visible } : t))
+    );
+  };
+
+  const handleSaveTileLayout = () => {
+    saveTileLayout(tilesState);
+    if (showAlert) {
+      showAlert('Layout Gespeichert', 'Deine individuellen Kachel-Größen und Ausrichtungen wurden erfolgreich gespeichert!', 'success');
+    }
+  };
+
+  const handleResetTileLayout = () => {
+    const defaults = resetTileLayout();
+    setTilesState(defaults);
+    if (showAlert) {
+      showAlert('Standard Wiederhergestellt', 'Das Kachel-Layout wurde auf die Standardansicht zurückgesetzt.', 'success');
     }
   };
 
@@ -159,6 +293,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             >
               🛒 Inserate ({userMarketItems.length})
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSection('tile_layout')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase border cursor-pointer transition-all flex items-center gap-2 ${
+                activeSection === 'tile_layout'
+                  ? 'bg-amber-500 text-black border-amber-400 shadow-lg scale-105'
+                  : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-amber-500/50 hover:text-white'
+              }`}
+            >
+              🧩 Kacheln ausrichten
+            </button>
           </div>
         </div>
 
@@ -204,7 +349,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
                     <label className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase rounded-full cursor-pointer transition-all shadow-md">
-                      <Upload className="w-4 h-4" /> Foto Auswählen
+                      <Upload className="w-4 h-4" /> Foto Hochladen
                       <input
                         type="file"
                         accept="image/*"
@@ -216,12 +361,32 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     {avatarUrl && (
                       <button
                         type="button"
-                        onClick={() => setAvatarUrl('')}
+                        onClick={() => {
+                          setAvatarUrl('');
+                          saveProfileData('');
+                        }}
                         className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-red-400 hover:text-red-300 font-bold text-xs uppercase rounded-full border border-red-900/50 transition-all cursor-pointer"
                       >
                         Bild Entfernen
                       </button>
                     )}
+                  </div>
+
+                  <div className="pt-1">
+                    <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                      Oder Bild-URL einfügen:
+                    </label>
+                    <input
+                      type="url"
+                      value={avatarUrl.startsWith('data:') ? '' : avatarUrl}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setAvatarUrl(val);
+                        saveProfileData(val);
+                      }}
+                      placeholder="https://beispiel.de/mein-foto.jpg"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500"
+                    />
                   </div>
                 </div>
               </div>
@@ -538,6 +703,262 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* SECTION 5: KACHELN AUSRICHTEN & SKALIEREN */}
+        {activeSection === 'tile_layout' && (
+          <div className="space-y-6">
+            <div className="bg-slate-950 p-6 rounded-2xl border border-amber-500/40 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/30 flex-shrink-0">
+                    <LayoutGrid className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold uppercase text-white flex items-center gap-2">
+                      Kacheln Ausrichten & Skalieren
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Passe die Größe (Breite & Höhe), Position und Sichtbarkeit deiner Kacheln individuell an.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleResetTileLayout}
+                    className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-extrabold uppercase cursor-pointer transition-all flex items-center gap-1.5"
+                    title="Zurücksetzen"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveTileLayout}
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase cursor-pointer shadow-lg transition-all flex items-center gap-1.5 border-0"
+                  >
+                    <Save className="w-4 h-4" /> Layout Speichern
+                  </button>
+                </div>
+              </div>
+
+              {/* Preset buttons */}
+              <div className="pt-2 border-t border-slate-900 flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-400 uppercase mr-1">Schnell-Layouts:</span>
+                <button
+                  type="button"
+                  onClick={() => setTilesState((prev) => prev.map((t) => ({ ...t, colSpan: 1, minHeight: 160, visible: true })))}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] font-bold text-slate-300 uppercase cursor-pointer"
+                >
+                  Standard (1/3 Breite)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTilesState((prev) => prev.map((t) => ({ ...t, colSpan: 2, minHeight: 200, visible: true })))}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] font-bold text-slate-300 uppercase cursor-pointer"
+                >
+                  Panorama (2/3 Breite)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTilesState((prev) => prev.map((t) => ({ ...t, colSpan: 3, minHeight: 180, visible: true })))}
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[10px] font-bold text-slate-300 uppercase cursor-pointer"
+                >
+                  Vollbreit (100%)
+                </button>
+              </div>
+            </div>
+
+            {/* Interactive Grid Editor & Preview */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-extrabold uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                  <Sliders className="w-4 h-4 text-amber-400" /> Interaktive Kachel-Gitter Vorschau
+                </h4>
+                <span className="text-[11px] text-slate-400">Passe Kachel-Spalten und Höhen nach Wunsch an</span>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-5 bg-slate-950 p-6 rounded-3xl border border-slate-800 min-h-[300px]">
+                {tilesState.map((tile, idx) => {
+                  const getColWidthClass = (cols: number) => {
+                    if (cols === 1) return 'w-full md:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]';
+                    if (cols === 2) return 'w-full lg:w-[calc(66.666%-10px)]';
+                    return 'w-full';
+                  };
+
+                  const getIconComponent = (iconName: string) => {
+                    switch (iconName) {
+                      case 'Map': return <Map className="w-7 h-7" />;
+                      case 'MessageSquare': return <MessageSquare className="w-7 h-7" />;
+                      case 'Calendar': return <Calendar className="w-7 h-7" />;
+                      case 'MapPin': return <MapPin className="w-7 h-7" />;
+                      case 'Wrench': return <Wrench className="w-7 h-7" />;
+                      case 'ShoppingBag': return <ShoppingBag className="w-7 h-7" />;
+                      default: return <LayoutGrid className="w-7 h-7" />;
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={tile.id}
+                      style={{ minHeight: `${tile.minHeight}px` }}
+                      className={`relative bg-slate-900/90 border-2 transition-all rounded-2xl p-5 shadow-xl flex flex-col justify-between group ${
+                        getColWidthClass(tile.colSpan)
+                      } ${
+                        tile.visible
+                          ? 'border-slate-800 hover:border-amber-400/80'
+                          : 'border-red-900/40 opacity-40 grayscale'
+                      }`}
+                    >
+                      {/* Control Bar Header */}
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-3 mb-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`p-2 rounded-xl flex-shrink-0 ${tile.bgIconClass}`}>
+                            {getIconComponent(tile.iconName)}
+                          </div>
+                          <div className="min-w-0">
+                            <h5 className="text-sm font-black uppercase text-white truncate">{tile.title}</h5>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] bg-slate-950 text-amber-300 font-extrabold px-2 py-0.5 rounded border border-slate-800">
+                                {tile.colSpan === 1 ? '1/3 B' : tile.colSpan === 2 ? '2/3 B' : '100% B'} · {tile.minHeight}px H
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Order & Visibility Controls */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveTile(idx, 'up')}
+                            disabled={idx === 0}
+                            className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 disabled:opacity-30 text-slate-300 border border-slate-800 cursor-pointer"
+                            title="Nach oben / links verschieben"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveTile(idx, 'down')}
+                            disabled={idx === tilesState.length - 1}
+                            className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 disabled:opacity-30 text-slate-300 border border-slate-800 cursor-pointer"
+                            title="Nach unten / rechts verschieben"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleTileVisibility(tile.id)}
+                            className={`p-1.5 rounded-lg border cursor-pointer transition-colors ${
+                              tile.visible
+                                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/60'
+                                : 'bg-red-950/60 text-red-400 border-red-800/60'
+                            }`}
+                            title={tile.visible ? 'Kachel ausblenden' : 'Kachel einblenden'}
+                          >
+                            {tile.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Content Preview */}
+                      <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-4">
+                        {tile.subtitle}
+                      </p>
+
+                      {/* Interactive Resizing Controls Footer */}
+                      <div className="bg-slate-950/90 p-3 rounded-xl border border-slate-800/80 space-y-2 mt-auto">
+                        {/* Width Buttons */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-bold uppercase text-slate-400">Breite:</span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleSetTileWidth(tile.id, 1)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold border cursor-pointer ${
+                                tile.colSpan === 1
+                                  ? 'bg-amber-500 text-black border-amber-400'
+                                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                              }`}
+                            >
+                              Klein (1)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetTileWidth(tile.id, 2)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold border cursor-pointer ${
+                                tile.colSpan === 2
+                                  ? 'bg-amber-500 text-black border-amber-400'
+                                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                              }`}
+                            >
+                              Mittel (2)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetTileWidth(tile.id, 3)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-extrabold border cursor-pointer ${
+                                tile.colSpan === 3
+                                  ? 'bg-amber-500 text-black border-amber-400'
+                                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                              }`}
+                            >
+                              Groß (3)
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Height Slider */}
+                        <div className="flex items-center gap-2 pt-1 border-t border-slate-900">
+                          <span className="text-[10px] font-bold uppercase text-slate-400 flex-shrink-0">
+                            Höhe ({tile.minHeight}px):
+                          </span>
+                          <input
+                            type="range"
+                            min="130"
+                            max="380"
+                            step="10"
+                            value={tile.minHeight}
+                            onChange={(e) => handleSetTileHeight(tile.id, Number(e.target.value))}
+                            className="w-full accent-amber-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                          />
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateTileHeight(tile.id, -20)}
+                              className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-black text-amber-400 cursor-pointer"
+                              title="Höhe verringern"
+                            >
+                              -
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateTileHeight(tile.id, 20)}
+                              className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-black text-amber-400 cursor-pointer"
+                              title="Höhe vergrößern"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={handleSaveTileLayout}
+                className="px-8 py-3.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold uppercase text-xs rounded-full shadow-xl transition-all border-0 cursor-pointer inline-flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Kachel-Layout Speichern
+              </button>
+            </div>
           </div>
         )}
       </div>

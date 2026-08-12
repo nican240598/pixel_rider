@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { User, UserRole, MarketAppeal, CrewMember, PixelOfMonth } from '../types';
-import { Shield, Key, Users, CheckCircle, Trash2, RotateCw, Hammer, Trophy, Plus, Edit, X, Star, Instagram, Youtube, Image as ImageIcon } from 'lucide-react';
+import { User, UserRole, MarketAppeal, CrewMember, CrewEvent } from '../types';
+import { Shield, Key, Users, CheckCircle, Trash2, RotateCw, Hammer, Plus, Edit, X, Star, Instagram, Youtube, Image as ImageIcon, Bell, AlertTriangle, Calendar, UserCheck } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User;
@@ -8,7 +8,7 @@ interface AdminViewProps {
   invites: { code: string; created_by: string; is_used: boolean; used_by?: string }[];
   appeals: MarketAppeal[];
   crewMembers?: CrewMember[];
-  pixelOfMonth: PixelOfMonth | null;
+  events?: CrewEvent[];
   onGenerateInvite: () => void;
   onToggleInvite: (code: string, currentUsed: boolean) => void;
   onDeleteInvite: (code: string) => void;
@@ -19,7 +19,8 @@ interface AdminViewProps {
   onAddCrewMember?: (member: Omit<CrewMember, 'id'>) => void;
   onEditCrewMember?: (id: string, member: Partial<CrewMember>) => void;
   onDeleteCrewMember?: (id: string) => void;
-  onSetPixelOfMonth: (pixel: PixelOfMonth) => void;
+  onSendInactivityWarning?: (username: string) => void;
+  onSendInactivityWarningToAll?: () => void;
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({
@@ -28,7 +29,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
   invites,
   appeals,
   crewMembers = [],
-  pixelOfMonth,
+  events = [],
   onGenerateInvite,
   onToggleInvite,
   onDeleteInvite,
@@ -39,10 +40,10 @@ export const AdminView: React.FC<AdminViewProps> = ({
   onAddCrewMember,
   onEditCrewMember,
   onDeleteCrewMember,
-  onSetPixelOfMonth,
+  onSendInactivityWarning,
+  onSendInactivityWarningToAll,
 }) => {
   const [activeTab, setActiveTab] = useState<'invites' | 'users' | 'crew' | 'appeals'>('crew');
-  const [crewSubTab, setCrewSubTab] = useState<'members' | 'pixel_month'>('members');
 
   // Crew Modal state
   const [crewModalOpen, setCrewModalOpen] = useState(false);
@@ -54,60 +55,11 @@ export const AdminView: React.FC<AdminViewProps> = ({
   const [crewIg, setCrewIg] = useState('');
   const [crewYt, setCrewYt] = useState('');
 
-  // Pixel des Monats state
-  const [pomUsername, setPomUsername] = useState(pixelOfMonth?.username || '');
-  const [pomTitle, setPomTitle] = useState(pixelOfMonth?.title || 'Pixel des Monats');
-  const [pomReason, setPomReason] = useState(pixelOfMonth?.reason || '');
-  const [pomImage, setPomImage] = useState(pixelOfMonth?.image_url || '');
-  const [pomBike, setPomBike] = useState(pixelOfMonth?.bike || '');
-  const [pomIg, setPomIg] = useState(pixelOfMonth?.social_ig || '');
-  const [pomTt, setPomTt] = useState(pixelOfMonth?.social_tiktok || '');
-  const [pomYt, setPomYt] = useState(pixelOfMonth?.social_youtube || '');
-  const [autoFillNotice, setAutoFillNotice] = useState<string | null>(null);
-
-  const handlePomUsernameChange = (uname: string) => {
-    setPomUsername(uname);
-    const targetUser = users.find((u) => u.username.toLowerCase() === uname.toLowerCase().trim());
-    if (targetUser) {
-      if (targetUser.social_ig) setPomIg(targetUser.social_ig);
-      if (targetUser.social_tiktok) setPomTt(targetUser.social_tiktok);
-      if (targetUser.social_youtube) setPomYt(targetUser.social_youtube);
-
-      // Check crew image if applicable
-      const matchedCrew = crewMembers.find((c) => c.name.toLowerCase() === uname.toLowerCase().trim());
-      if (matchedCrew?.image_url && !pomImage) {
-        setPomImage(matchedCrew.image_url);
-      }
-
-      const foundSocials = [
-        targetUser.social_ig && 'Instagram',
-        targetUser.social_tiktok && 'TikTok',
-        targetUser.social_youtube && 'YouTube',
-      ].filter(Boolean);
-
-      if (foundSocials.length > 0) {
-        setAutoFillNotice(`✨ Profile-Links (${foundSocials.join(', ')}) für ${targetUser.username} wurden automatisch vorausgefüllt!`);
-      } else {
-        setAutoFillNotice(`User „${targetUser.username}“ in der Datenbank gefunden.`);
-      }
-    } else {
-      setAutoFillNotice(null);
-    }
-  };
-
   const handleCrewImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const reader = new FileReader();
       reader.readAsDataURL(e.target.files[0]);
       reader.onload = () => setCrewImage(reader.result as string);
-    }
-  };
-
-  const handlePomImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.readAsDataURL(e.target.files[0]);
-      reader.onload = () => setPomImage(reader.result as string);
     }
   };
 
@@ -170,7 +122,7 @@ export const AdminView: React.FC<AdminViewProps> = ({
             activeTab === 'crew' ? 'border-amber-400 text-amber-400' : 'border-transparent text-slate-400'
           }`}
         >
-          <Users className="w-4 h-4 text-purple-400" /> Crew & Pixel des Monats
+          <Users className="w-4 h-4 text-purple-400" /> Crew ({crewMembers.length})
         </button>
 
         <button
@@ -245,332 +197,267 @@ export const AdminView: React.FC<AdminViewProps> = ({
       )}
 
       {/* Users Tab */}
-      {activeTab === 'users' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
-          <h3 className="text-base font-bold uppercase text-amber-400 mb-6">Mitglieder & Rechteverwaltung</h3>
+      {activeTab === 'users' && (() => {
+        const currentMonth = new Date().getMonth(); // 0 = Jan, 2 = Mar, 10 = Nov
+        const isRidingSeason = currentMonth >= 2 && currentMonth <= 10;
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase text-[10px]">
-                <tr>
-                  <th className="p-3">Username</th>
-                  <th className="p-3">Rolle</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-right">Rolle Ändern / Aktion</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800">
-                {users.map((u) => {
-                  const isSystemAdmin = u.username.toLowerCase() === 'nican';
+        const getDaysSinceLogin = (u: User) => {
+          if (!u.last_login) return null;
+          const d = new Date(u.last_login);
+          if (isNaN(d.getTime())) return null;
+          const diffMs = Date.now() - d.getTime();
+          return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        };
 
-                  return (
-                    <tr key={u.username} className="hover:bg-slate-800/50">
-                      <td className="p-3 font-bold text-white">{u.username}</td>
-                      <td className="p-3">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
-                          u.role === 'admin' ? 'bg-red-900/80 text-red-300' :
-                          u.role === 'moderator' ? 'bg-amber-900/80 text-amber-300' : 'bg-purple-900/80 text-purple-300'
-                        }`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        {u.is_deactivated ? (
-                          <span className="bg-red-900/60 text-red-300 px-2 py-0.5 rounded text-[10px]">Gesperrt</span>
-                        ) : (
-                          <span className="bg-emerald-900/60 text-emerald-300 px-2 py-0.5 rounded text-[10px]">Aktiv</span>
-                        )}
-                      </td>
-                      <td className="p-3 text-right space-x-2">
-                        {!isSystemAdmin ? (
-                          <>
-                            <select
-                              value={u.role}
-                              onChange={(e) => onChangeUserRole(u.username, e.target.value as UserRole)}
-                              className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white"
-                            >
-                              <option value="member">Member</option>
-                              <option value="ehren pixel">Ehren Pixel</option>
-                              <option value="moderator">Moderator</option>
-                              {currentUser.isAdmin && <option value="admin">Admin</option>}
-                            </select>
+        const getUserEventCount = (u: User) => {
+          if (!events) return 0;
+          const uName = u.username.toLowerCase();
+          const uEmail = u.email ? u.email.toLowerCase() : '';
+          return events.filter((e) => {
+            const parts = e.participants || [];
+            const isPart = parts.some((p) => {
+              const pClean = p.toLowerCase();
+              return pClean === uName || (uEmail && pClean === uEmail);
+            });
+            const isCreator = e.created_by && e.created_by.toLowerCase() === uName;
+            return isPart || isCreator;
+          }).length;
+        };
 
-                            <button
-                              onClick={() => onToggleUserStatus(u.username, !!u.is_deactivated)}
-                              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-[10px] font-bold border-0 cursor-pointer"
-                            >
-                              {u.is_deactivated ? 'Entsperren' : 'Sperren'}
-                            </button>
+        const isUserInactive = (u: User) => {
+          if (u.username.toLowerCase() === 'nican' || u.role === 'admin') return false;
+          const days = getDaysSinceLogin(u);
+          const evCount = getUserEventCount(u);
+          const longInactive = days === null || days > 90; // > 3 months
+          return longInactive && evCount === 0;
+        };
 
-                            {currentUser.isAdmin && (
-                              <button
-                                onClick={() => onDeleteUser(u.username)}
-                                className="p-1 text-red-400 hover:text-red-300 border-0 bg-transparent cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-[10px] text-slate-500 italic">System-Admin</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+        const inactiveCount = users.filter((u) => isUserInactive(u)).length;
 
-      {/* CREW & PIXEL DES MONATS TAB */}
-      {activeTab === 'crew' && (
-        <div className="space-y-6">
-          {/* Sub-Tabs Toggle Bar */}
-          <div className="flex justify-center gap-3 bg-slate-950 p-1.5 rounded-full border border-slate-800 max-w-md mx-auto shadow-inner">
-            <button
-              onClick={() => setCrewSubTab('members')}
-              className={`flex-1 py-2 rounded-full font-extrabold uppercase text-xs transition-all border-0 cursor-pointer flex items-center justify-center gap-2 ${
-                crewSubTab === 'members'
-                  ? 'bg-gradient-to-r from-purple-900 to-amber-500 text-white shadow-lg border border-amber-400/40'
-                  : 'text-slate-400 hover:text-white bg-transparent'
-              }`}
-            >
-              <Users className="w-4 h-4" /> Crew-Mitglieder ({crewMembers.length})
-            </button>
-            <button
-              onClick={() => setCrewSubTab('pixel_month')}
-              className={`flex-1 py-2 rounded-full font-extrabold uppercase text-xs transition-all border-0 cursor-pointer flex items-center justify-center gap-2 ${
-                crewSubTab === 'pixel_month'
-                  ? 'bg-gradient-to-r from-purple-900 to-amber-500 text-white shadow-lg border border-amber-400/40'
-                  : 'text-slate-400 hover:text-white bg-transparent'
-              }`}
-            >
-              <Trophy className="w-4 h-4 text-amber-400" /> Pixel des Monats
-            </button>
-          </div>
-
-          {/* SUB-TAB 1: CREW MEMBERS LIST */}
-          {crewSubTab === 'members' && (
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
-              <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+        return (
+          <div className="space-y-6">
+            {/* Seasonal Inactivity Alert Header Banner */}
+            <div className="bg-gradient-to-r from-purple-950/90 via-slate-900 to-amber-950/40 border border-amber-500/50 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 z-10 relative">
                 <div>
-                  <h3 className="text-lg font-bold uppercase text-amber-400 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-amber-400" /> Pixel Rider Crew Verwaltung
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-amber-500/20 text-amber-300 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-amber-400" /> Biker-Saison Überwachung (März – November)
+                    </span>
+                    {isRidingSeason ? (
+                      <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                        🟢 Saison Aktiv
+                      </span>
+                    ) : (
+                      <span className="bg-slate-800 text-slate-400 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border border-slate-700">
+                        ⚪ Saison-Pause (Dez–Feb)
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-black uppercase text-amber-400 tracking-wide">
+                    Inaktivitäts-Tracking & Community Kick-Avis
                   </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Verwalte die Mitglieder der Pixel Rider Crew, die auf der Landing Page angezeigt werden.
+                  <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                    Mitglieder, die in der Biker-Saison (März bis November) länger als <strong>3 Monate (90 Tage)</strong> nicht auf der Webseite aktiv waren und an <strong>0 Events</strong> teilgenommen haben, werden hier automatisch erfasst und können verwarnt oder wegen Inaktivität entfernt werden.
                   </p>
                 </div>
-                <button
-                  onClick={openNewCrewModal}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase rounded-full shadow transition-all border-0 cursor-pointer flex items-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4" /> Mitglied Hinzufügen
-                </button>
-              </div>
 
-              {crewMembers.length === 0 ? (
-                <div className="text-center text-slate-500 text-xs py-12">
-                  <p>Keine Crew-Mitglieder vorhanden. Lege das erste Mitglied an!</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {crewMembers.map((m) => (
-                    <div key={m.id} className="bg-slate-950 border border-slate-800 hover:border-purple-800/80 rounded-xl p-4 flex items-center justify-between gap-3 transition-colors shadow-md">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <img
-                          src={m.image_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=200'}
-                          alt={m.name}
-                          className="w-12 h-12 rounded-full object-cover border border-purple-500/50 flex-shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <h4 className="text-sm font-black text-white uppercase truncate">{m.name}</h4>
-                          <p className="text-xs text-amber-400 font-bold truncate">{m.role}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => openEditCrewModal(m)}
-                          className="p-2 text-slate-400 hover:text-amber-400 transition-colors border-0 bg-transparent cursor-pointer"
-                          title="Bearbeiten"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteCrewMember?.(m.id)}
-                          className="p-2 text-slate-400 hover:text-red-400 transition-colors border-0 bg-transparent cursor-pointer"
-                          title="Löschen"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* SUB-TAB 2: PIXEL DES MONATS FORM */}
-          {crewSubTab === 'pixel_month' && (
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
-              <div className="mb-6">
-                <h3 className="text-lg font-bold uppercase text-amber-400 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-400" /> Pixel des Monats Kürung
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Küre ein Mitglied der Community. Tippe den Namen ein oder wähle einen User aus — Instagram, TikTok & YouTube Links werden automatisch aus der Datenbank geladen!
-                </p>
-              </div>
-
-              {autoFillNotice && (
-                <div className="mb-4 bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
-                  <span>{autoFillNotice}</span>
-                </div>
-              )}
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  onSetPixelOfMonth({
-                    username: pomUsername,
-                    title: pomTitle,
-                    reason: pomReason,
-                    image_url: pomImage,
-                    bike: pomBike,
-                    social_ig: pomIg,
-                    social_tiktok: pomTt,
-                    social_youtube: pomYt,
-                  });
-                }}
-                className="space-y-4 max-w-2xl"
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
-                      User Name (Aus Datenbank wählen) *
-                    </label>
-                    <input
-                      type="text"
-                      list="user-suggestions"
-                      value={pomUsername}
-                      onChange={(e) => handlePomUsernameChange(e.target.value)}
-                      placeholder="Name eingeben oder aus Liste wählen..."
-                      required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                    />
-                    <datalist id="user-suggestions">
-                      {users.map((u, i) => (
-                        <option key={i} value={u.username}>
-                          {u.username} ({u.role})
-                        </option>
-                      ))}
-                    </datalist>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Titel / Monats-Award *</label>
-                    <input
-                      type="text"
-                      value={pomTitle}
-                      onChange={(e) => setPomTitle(e.target.value)}
-                      placeholder="z.B. Pixel des Monats – August 2026"
-                      required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Begründung & Ehrung *</label>
-                  <textarea
-                    value={pomReason}
-                    onChange={(e) => setPomReason(e.target.value)}
-                    rows={3}
-                    placeholder="Warum ist diese Person Pixel des Monats geworden?"
-                    required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Motorrad / Bike Modell</label>
-                  <input
-                    type="text"
-                    value={pomBike}
-                    onChange={(e) => setPomBike(e.target.value)}
-                    placeholder="z.B. Yamaha MT-09 SP"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                {/* Auto-populated social media links */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-pink-400 mb-1">
-                      Instagram Link / Name
-                    </label>
-                    <input
-                      type="text"
-                      value={pomIg}
-                      onChange={(e) => setPomIg(e.target.value)}
-                      placeholder="https://instagram.com/... oder Username"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-cyan-400 mb-1">
-                      TikTok Link / Name
-                    </label>
-                    <input
-                      type="text"
-                      value={pomTt}
-                      onChange={(e) => setPomTt(e.target.value)}
-                      placeholder="https://tiktok.com/@... oder Username"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-red-400 mb-1">
-                      YouTube Link / Channel
-                    </label>
-                    <input
-                      type="text"
-                      value={pomYt}
-                      onChange={(e) => setPomYt(e.target.value)}
-                      placeholder="https://youtube.com/@... oder Channel"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-400 mb-1">Highlight Foto / Portrait</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePomImage}
-                    className="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-black hover:file:bg-amber-400 cursor-pointer mb-2"
-                  />
-                  {pomImage && (
-                    <div className="w-32 h-32 rounded-xl overflow-hidden border border-amber-500/50 mt-2">
-                      <img src={pomImage} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
+                <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col items-center justify-center min-w-[220px] text-center shadow-inner">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Gefährdete Profile</span>
+                  <span className={`text-2xl font-black my-1 ${inactiveCount > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                    {inactiveCount} / {users.length} Inaktiv
+                  </span>
+                  {inactiveCount > 0 && onSendInactivityWarningToAll && (
+                    <button
+                      onClick={onSendInactivityWarningToAll}
+                      className="mt-2 w-full py-2 px-3 bg-red-600 hover:bg-red-500 text-white font-extrabold text-[10px] uppercase rounded-lg shadow-lg border-0 cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Bell className="w-3 h-3 animate-bounce" /> Warnung an alle Inaktiven
+                    </button>
                   )}
                 </div>
+              </div>
+            </div>
 
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase rounded-full shadow-lg transition-all border-0 cursor-pointer flex items-center gap-2"
-                >
-                  <Star className="w-4 h-4 fill-black" />
-                  Pixel des Monats Veröffentlichen
-                </button>
-              </form>
+            {/* Users Table */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
+              <h4 className="text-sm font-bold uppercase text-amber-400 mb-4 flex items-center gap-2">
+                <Users className="w-4 h-4 text-amber-400" /> Alle Mitglieder-Profile ({users.length})
+              </h4>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950 text-slate-400 uppercase text-[10px]">
+                    <tr>
+                      <th className="p-3">Username & E-Mail</th>
+                      <th className="p-3">Rolle</th>
+                      <th className="p-3">Letzte Aktivität</th>
+                      <th className="p-3">Event-Aktivität</th>
+                      <th className="p-3">Saison-Status</th>
+                      <th className="p-3 text-right">Aktionen / Inaktivitäts-Warnung</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {users.map((u) => {
+                      const isSystemAdmin = u.username.toLowerCase() === 'nican';
+                      const daysInactive = getDaysSinceLogin(u);
+                      const eventCount = getUserEventCount(u);
+                      const inactive = isUserInactive(u);
+
+                      return (
+                        <tr key={u.username} className={`hover:bg-slate-800/50 transition-colors ${inactive ? 'bg-red-950/10' : ''}`}>
+                          <td className="p-3 font-bold text-white">
+                            <div>{u.username}</div>
+                            <span className="text-[10px] text-slate-500 font-normal">{u.email}</span>
+                          </td>
+                          <td className="p-3">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                              u.role === 'admin' ? 'bg-red-900/80 text-red-300' :
+                              u.role === 'moderator' ? 'bg-amber-900/80 text-amber-300' : 'bg-purple-900/80 text-purple-300'
+                            }`}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            {daysInactive !== null ? (
+                              <span className={`font-semibold ${daysInactive > 90 ? 'text-red-400' : daysInactive > 30 ? 'text-amber-400' : 'text-slate-300'}`}>
+                                Vor {daysInactive} Tag{daysInactive !== 1 ? 'en' : ''}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 italic">Nie eingeloggt</span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <span className={`font-bold ${eventCount > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                              {eventCount} Event{eventCount !== 1 ? 's' : ''}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            {inactive ? (
+                              <span className="bg-red-900/60 text-red-300 border border-red-500/30 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 w-fit">
+                                <AlertTriangle className="w-3 h-3 text-red-400" /> Inaktiv (&gt;3 Monate)
+                              </span>
+                            ) : u.is_deactivated ? (
+                              <span className="bg-red-950 text-red-400 px-2 py-0.5 rounded text-[10px]">Gesperrt</span>
+                            ) : (
+                              <span className="bg-emerald-950 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 w-fit">
+                                <UserCheck className="w-3 h-3 text-emerald-400" /> Aktiv
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3 text-right space-x-2">
+                            {!isSystemAdmin ? (
+                              <>
+                                {inactive && onSendInactivityWarning && (
+                                  <button
+                                    onClick={() => onSendInactivityWarning(u.username)}
+                                    className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-full text-[10px] font-bold border border-amber-500/40 cursor-pointer inline-flex items-center gap-1"
+                                    title="Push-Warnung bezüglich bevorstehendem Community-Kick senden"
+                                  >
+                                    <Bell className="w-3 h-3 text-amber-400" /> Warnung
+                                  </button>
+                                )}
+
+                                <select
+                                  value={u.role}
+                                  onChange={(e) => onChangeUserRole(u.username, e.target.value as UserRole)}
+                                  className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white"
+                                >
+                                  <option value="member">Member</option>
+                                  <option value="ehren pixel">Ehren Pixel</option>
+                                  <option value="moderator">Moderator</option>
+                                  {currentUser.isAdmin && <option value="admin">Admin</option>}
+                                </select>
+
+                                <button
+                                  onClick={() => onToggleUserStatus(u.username, !!u.is_deactivated)}
+                                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-[10px] font-bold border-0 cursor-pointer"
+                                >
+                                  {u.is_deactivated ? 'Entsperren' : 'Sperren'}
+                                </button>
+
+                                {currentUser.isAdmin && (
+                                  <button
+                                    onClick={() => onDeleteUser(u.username)}
+                                    className="p-1 text-red-400 hover:text-red-300 border-0 bg-transparent cursor-pointer inline-block align-middle"
+                                    title="User aus der Community kicken / löschen"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 italic">System-Admin</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* CREW TAB */}
+      {activeTab === 'crew' && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
+          <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+            <div>
+              <h3 className="text-lg font-bold uppercase text-amber-400 flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-400" /> Pixel Rider Crew Verwaltung
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Verwalte die Mitglieder der Pixel Rider Crew, die auf der Landing Page angezeigt werden.
+              </p>
+            </div>
+            <button
+              onClick={openNewCrewModal}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase rounded-full shadow transition-all border-0 cursor-pointer flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Mitglied Hinzufügen
+            </button>
+          </div>
+
+          {crewMembers.length === 0 ? (
+            <div className="text-center text-slate-500 text-xs py-12">
+              <p>Keine Crew-Mitglieder vorhanden. Lege das erste Mitglied an!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {crewMembers.map((m) => (
+                <div key={m.id} className="bg-slate-950 border border-slate-800 hover:border-purple-800/80 rounded-xl p-4 flex items-center justify-between gap-3 transition-colors shadow-md">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={m.image_url || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=200'}
+                      alt={m.name}
+                      className="w-12 h-12 rounded-full object-cover border border-purple-500/50 flex-shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-black text-white uppercase truncate">{m.name}</h4>
+                      <p className="text-xs text-amber-400 font-bold truncate">{m.role}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => openEditCrewModal(m)}
+                      className="p-2 text-slate-400 hover:text-amber-400 transition-colors border-0 bg-transparent cursor-pointer"
+                      title="Bearbeiten"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onDeleteCrewMember?.(m.id)}
+                      className="p-2 text-slate-400 hover:text-red-400 transition-colors border-0 bg-transparent cursor-pointer"
+                      title="Löschen"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

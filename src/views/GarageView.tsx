@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GarageBike, User } from '../types';
 import { Wrench, Plus, Images, Edit, Trash2, Heart, MessageSquare, X, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 
@@ -31,6 +31,16 @@ export const GarageView: React.FC<GarageViewProps> = ({
   const [previewImageIdx, setPreviewImageIdx] = useState(0);
 
   const [editBike, setEditBike] = useState<GarageBike | null>(null);
+
+  // Sync previewBike with latest bikes state (e.g. on like or comment)
+  useEffect(() => {
+    if (previewBike) {
+      const updated = bikes.find((b) => b.id === previewBike.id);
+      if (updated) {
+        setPreviewBike(updated);
+      }
+    }
+  }, [bikes]);
 
   // Add Bike Form
   const [modelInput, setModelInput] = useState('');
@@ -138,9 +148,27 @@ export const GarageView: React.FC<GarageViewProps> = ({
                 </div>
 
                 <div className="px-4 pb-4 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
-                  <span className="flex items-center gap-1 text-slate-400">
-                    <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500/20" /> {b.likes?.length || 0}
-                  </span>
+                  {(() => {
+                    const hasLiked = (b.likes || []).includes(currentUser.username);
+                    return (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onLikeBike(b.id);
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer border ${
+                          hasLiked
+                            ? 'bg-red-500/20 text-red-400 border-red-500/40 shadow-sm shadow-red-500/20'
+                            : 'bg-slate-950/80 text-slate-400 border-slate-800 hover:text-red-400 hover:border-red-500/30'
+                        }`}
+                        title={hasLiked ? 'Gefällt dir bereits (Klick zum Entfernen)' : 'Gefällt mir'}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${hasLiked ? 'text-red-500 fill-red-500' : 'text-slate-400'}`} />
+                        <span>{b.likes?.length || 0}</span>
+                      </button>
+                    );
+                  })()}
+
                   <span className="flex items-center gap-1 text-slate-400">
                     <MessageSquare className="w-3.5 h-3.5 text-purple-400" /> {b.comments?.length || 0}
                   </span>
@@ -446,12 +474,26 @@ export const GarageView: React.FC<GarageViewProps> = ({
 
             {/* Likes & Comments */}
             <div className="flex items-center justify-between border-t border-slate-800 pt-4 mb-4">
-              <button
-                onClick={() => onLikeBike(previewBike.id)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-xs font-bold transition-all cursor-pointer"
-              >
-                <Heart className="w-4 h-4 fill-red-500" /> Like ({previewBike.likes?.length || 0})
-              </button>
+              {(() => {
+                const previewHasLiked = (previewBike.likes || []).includes(currentUser.username);
+                return (
+                  <button
+                    onClick={() => onLikeBike(previewBike.id)}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-extrabold transition-all border cursor-pointer ${
+                      previewHasLiked
+                        ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-600/30'
+                        : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:text-red-400'
+                    }`}
+                    title={previewHasLiked ? 'Like zurücknehmen' : 'Bike liken'}
+                  >
+                    <Heart className={`w-4 h-4 ${previewHasLiked ? 'fill-white text-white' : 'text-red-500 fill-red-500/20'}`} />
+                    <span>{previewHasLiked ? 'Gefällt dir bereits' : 'Gefällt mir'}</span>
+                    <span className="bg-black/30 px-2 py-0.5 rounded-full text-[10px] ml-1">
+                      {previewBike.likes?.length || 0}
+                    </span>
+                  </button>
+                );
+              })()}
             </div>
 
             {/* Comments List */}

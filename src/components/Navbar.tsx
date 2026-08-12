@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { User, AppView, CrewEvent, UserNotification } from '../types';
-import { Shield, Bell, User as UserIcon, LogOut, Grid, Wrench, MessageSquare, Calendar, MapPin, Radio, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, AppView, CrewEvent, UserNotification, TripEntry } from '../types';
+import { Shield, Bell, User as UserIcon, LogOut, Grid, Wrench, MessageSquare, Calendar, MapPin, Radio, Users, Flame, CloudSun, Trophy } from 'lucide-react';
+import { getUserTotalKm, getUserRankBadge, getUserStreakWeeks } from '../lib/challengeUtils';
 
 interface NavbarProps {
   currentUser: User | null;
   currentView: AppView;
   setCurrentView: (view: AppView) => void;
   nextEvent: CrewEvent | null;
+  trips?: TripEntry[];
   onlineCount: number;
   onlineUsers: string[];
   unreadUserNotifs: number;
@@ -17,6 +19,7 @@ interface NavbarProps {
   onOpenPublicProfile: (username: string) => void;
   onOpenDirectChat: (username: string) => void;
   onLogout: () => void;
+  onOpenLeaderboard?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -24,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentView,
   setCurrentView,
   nextEvent,
+  trips = [],
   onlineCount,
   onlineUsers,
   unreadUserNotifs,
@@ -34,23 +38,66 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPublicProfile,
   onOpenDirectChat,
   onLogout,
+  onOpenLeaderboard,
 }) => {
   const [showOnlineDropdown, setShowOnlineDropdown] = useState(false);
+  const [weatherText, setWeatherText] = useState<string>('☀️ SA 22°C - CREW RIDE WETTER');
 
-  // Format countdown string for ticker
-  const getTickerText = () => {
-    if (!nextEvent) return 'Aktuell keine Events geplant';
+  // Compute User Rank & Streak (Feature C)
+  const totalKm = currentUser ? getUserTotalKm(currentUser.username, trips) : 0;
+  const rankBadge = getUserRankBadge(totalKm);
+  const streakWeeks = currentUser ? getUserStreakWeeks(currentUser.username, trips) : 0;
+
+  // Check if next event is within the next 48 hours (Feature D)
+  const isEventInNext48h = (() => {
+    if (!nextEvent || !nextEvent.date_time) return false;
     const evTime = new Date(nextEvent.date_time).getTime();
     const now = Date.now();
     const diff = evTime - now;
-    if (diff <= 0) {
-      return `LIVE: ${nextEvent.title} - LÄUFT JETZT!`;
+    return diff > 0 && diff <= 48 * 3600 * 1000;
+  })();
+
+  // Fetch Open-Meteo weekend weather if no event in next 48h
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchWeather() {
+      try {
+        // Stuttgart / Schwarzwald default region coords (48.7711, 9.0371)
+        const res = await fetch(
+          'https://api.open-meteo.com/v1/forecast?latitude=48.7711&longitude=9.0371&daily=temperature_2m_max,weathercode&timezone=Europe%2FBerlin'
+        );
+        const data = await res.json();
+        if (data?.daily?.temperature_2m_max?.[0] !== undefined) {
+          const maxTemp = Math.round(data.daily.temperature_2m_max[0]);
+          const code = data.daily.weathercode[0];
+          let icon = '☀️';
+          if (code >= 1 && code <= 3) icon = '🌤️';
+          else if (code >= 45 && code <= 48) icon = '🌫️';
+          else if (code >= 51 && code <= 67) icon = '🌧️';
+          else if (code >= 80) icon = '🌩️';
+
+          if (isMounted) {
+            setWeatherText(`${icon} WOCHENENDE ${maxTemp}°C - PERFEKTES RIDE WETTER`);
+          }
+        }
+      } catch (e) {
+        // Fallback default
+      }
     }
-    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-    const m = Math.floor((diff / (1000 * 60)) % 60);
-    const timeStr = `${d > 0 ? d + 'T ' : ''}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-    return `NEXT RIDE: ${nextEvent.title} (START IN ${timeStr})`;
+    fetchWeather();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Format dynamic ticker text for Events Banner
+  const getDynamicHeaderPillText = () => {
+    if (nextEvent) {
+      const evDate = new Date(nextEvent.date_time);
+      const dateStr = evDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+      return `📅 NEXT EVENT: ${nextEvent.title} (${dateStr} UHR)`;
+    }
+    return `📅 NÄCHSTE AUSFAHRT & CREW EVENTS`;
   };
 
   return (
@@ -111,19 +158,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* Event Liveticker (Center) */}
+          {/* Events Banner (Center Pill) */}
           <div className="hidden lg:flex flex-1 justify-center max-w-md mx-auto">
             <button
               onClick={() => setCurrentView('events')}
-              className="bg-yellow-400/10 border border-yellow-400/80 rounded-full px-5 py-2 text-xs font-bold uppercase text-yellow-300 flex items-center gap-2 hover:bg-yellow-400/20 transition-all text-ellipsis overflow-hidden whitespace-nowrap cursor-pointer shadow-[0_0_15px_rgba(250,204,21,0.2)]"
+              className="border rounded-full px-5 py-2 text-xs font-black uppercase flex items-center gap-2 transition-all text-ellipsis overflow-hidden whitespace-nowrap cursor-pointer bg-amber-500/20 border-amber-400 text-amber-300 hover:bg-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+              title="Anstehende Events & Ausfahrten anzeigen"
             >
-              <Radio className="w-4 h-4 text-yellow-400 animate-pulse flex-shrink-0" />
-              <span className="truncate">{getTickerText()}</span>
+              <Calendar className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span className="truncate">{getDynamicHeaderPillText()}</span>
             </button>
           </div>
 
-          {/* Right Section: Badges, Profile & Logout */}
-          <div className="flex items-center gap-4 ml-auto">
+          {/* Right Section: Profile & Logout */}
+          <div className="flex items-center gap-2.5 md:gap-3.5 ml-auto">
+
             {/* Admin Bell */}
             {(currentUser.isAdmin || currentUser.isModerator) && (
               <button

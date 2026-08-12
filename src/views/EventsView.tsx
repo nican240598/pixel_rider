@@ -619,11 +619,34 @@ export const EventsView: React.FC<EventsViewProps> = ({
                   {detailEvent.participants?.length === 0 ? (
                     <span className="text-xs text-slate-500 italic">Noch keine Anmeldungen – melde dich als Erster an!</span>
                   ) : (
-                    detailEvent.participants?.map((p, i) => (
-                      <span key={i} className="text-xs bg-slate-800 text-amber-300 px-3 py-1.5 rounded-xl font-bold border border-slate-700 flex items-center gap-1.5">
-                        🏍️ {p.split('@')[0]}
-                      </span>
-                    ))
+                    detailEvent.participants?.map((p, i) => {
+                      const cleanName = (() => {
+                        if (!p) return 'Biker';
+                        const pClean = p.trim().toLowerCase();
+                        const foundUser = allUsers.find(
+                          (u) => (u.username && u.username.toLowerCase() === pClean) || (u.email && u.email.toLowerCase() === pClean)
+                        );
+                        if (foundUser?.username) return foundUser.username;
+                        const foundPin = mapPins.find(
+                          (m) => (m.username && m.username.toLowerCase() === pClean) || (m.email && m.email.toLowerCase() === pClean)
+                        );
+                        if (foundPin?.username) return foundPin.username;
+                        if (currentUser && ((currentUser.email && currentUser.email.toLowerCase() === pClean) || (currentUser.username && currentUser.username.toLowerCase() === pClean))) {
+                          return currentUser.username;
+                        }
+                        if (p.includes('@')) {
+                          const parts = p.split('@')[0];
+                          return parts.charAt(0).toUpperCase() + parts.slice(1);
+                        }
+                        return p;
+                      })();
+
+                      return (
+                        <span key={i} className="text-xs bg-slate-800 text-amber-300 px-3 py-1.5 rounded-xl font-bold border border-slate-700 flex items-center gap-1.5">
+                          🏍️ {cleanName}
+                        </span>
+                      );
+                    })
                   )}
                 </div>
               </div>
