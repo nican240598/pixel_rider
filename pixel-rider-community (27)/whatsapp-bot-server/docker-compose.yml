@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  wa-vetting-bot:
+    build: .
+    container_name: pixel_wa_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persistent auth credentials for WhatsApp multi-device session
+      - ./auth_info_baileys:/app/auth_info_baileys
+    ports:
+      - "3001:3001"

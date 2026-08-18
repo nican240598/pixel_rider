@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%" shape-rendering="crispEdges">
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <!-- Card Background -->
+  <rect x="15" y="15" width="470" height="470" rx="36" ry="36" fill="#ffffff" filter="url(#shadow)" shape-rendering="auto"/>
+  
+  <g transform="translate(45, 45)">
+    <!-- Finder Top-Left -->
+    <rect x="0" y="0" width="70" height="70" fill="#000000" rx="10" ry="10" shape-rendering="auto"/>
+    <rect x="10" y="10" width="50" height="50" fill="#ffffff" rx="6" ry="6" shape-rendering="auto"/>
+    <rect x="20" y="20" width="30" height="30" fill="#000000" rx="4" ry="4" shape-rendering="auto"/>
+
+    <!-- Finder Top-Right -->
+    <rect x="340" y="0" width="70" height="70" fill="#000000" rx="10" ry="10" shape-rendering="auto"/>
+    <rect x="350" y="10" width="50" height="50" fill="#ffffff" rx="6" ry="6" shape-rendering="auto"/>
+    <rect x="360" y="20" width="30" height="30" fill="#000000" rx="4" ry="4" shape-rendering="auto"/>
+
+    <!-- Finder Bottom-Left -->
+    <rect x="0" y="340" width="70" height="70" fill="#000000" rx="10" ry="10" shape-rendering="auto"/>
+    <rect x="10" y="350" width="50" height="50" fill="#ffffff" rx="6" ry="6" shape-rendering="auto"/>
+    <rect x="20" y="360" width="30" height="30" fill="#000000" rx="4" ry="4" shape-rendering="auto"/>
+
+    <!-- Timing Patterns & Alignment -->
+    <rect x="80" y="60" width="250" height="10" fill="#000000" stroke="#ffffff" stroke-width="2" stroke-dasharray="10,10"/>
+    <rect x="60" y="80" width="10" height="250" fill="#000000" stroke="#ffffff" stroke-width="2" stroke-dasharray="10,10"/>
+
+    <!-- Alignment Pattern Bottom-Right -->
+    <rect x="290" y="290" width="50" height="50" fill="#000000" rx="6" ry="6" shape-rendering="auto"/>
+    <rect x="300" y="300" width="30" height="30" fill="#ffffff" rx="4" ry="4" shape-rendering="auto"/>
+    <rect x="310" y="310" width="10" height="10" fill="#000000" rx="2" ry="2" shape-rendering="auto"/>
+  </g>
+</svg>

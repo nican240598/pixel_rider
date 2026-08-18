@@ -1,0 +1,6 @@
+{
+  "name": "Pixel Rider Community",
+  "description": "Die Community Web-App für Motorradfahrer mit Garage, Flohmarkt, GPX-Routen, PixelMap und Events.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
